@@ -7,7 +7,7 @@ import random
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
 Port = 1883 # standard MQTT port
-pi_puck_id = '17'
+pi_puck_id = '14'
 max_range = 0.5
 x = 0.0
 y = 0.0
