@@ -32,7 +32,7 @@ def on_message(client, userdata, msg):
             # Check if the message is a dictionary
             puck_pos_dict.update(data)
         if msg.topic == "robots/all":
-            msg_x = data[pi_puck_id][0]
+            msg_x = data.get(pi_puck_id, {}).get("x")
             
     except json.JSONDecodeError:
 
