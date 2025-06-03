@@ -33,6 +33,12 @@ def on_message(client, userdata, msg):
             puck_pos_dict.update(data)
         if msg.topic == "robots/all":
             msg_x = data.get(pi_puck_id, {}).get("x")
+            msg_y = data.get(pi_puck_id, {}).get("y")
+            if msg_x is not None and msg_y is not None:
+                if distance(x, y, msg_x, msg_y) < max_range:
+                    puck_dict.update(data)
+            else:
+                print(f"Invalid data for PiPuck ID {pi_puck_id}: {data}")
             
     except json.JSONDecodeError:
 
@@ -72,6 +78,7 @@ def publish_data(packet):
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
+        print(f'puck_dict: {puck_dict}')
         x, y, angle = get_position()
         if x is not None and y is not None:
             publish_data({
