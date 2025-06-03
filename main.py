@@ -35,9 +35,10 @@ def on_message(client, userdata, msg):
             msg_x = data.get('id', {}).get('x')
             msg_y = data.get('id', {}).get('y')
             if distance(x, y, msg_x, msg_y) < max_range:
-                puck_dict[data['id']] = data
+                puck_dict.update(data)
             
     except json.JSONDecodeError:
+
         print(f'invalid json: {msg.payload}')
 
 # Initialize MQTT client
@@ -71,27 +72,32 @@ def get_position(id=pi_puck_id):
 def publish_data(packet):
     client.publish("robots/all", json.dumps(packet))
 
-for _ in range(1000):
-    # TODO: Do your stuff here
-    x, y, angle = get_position()
-    if x is not None and y is not None:
-        publish_data({
-            "id": {
-                "x": x,
-                "y": y,
-                "angle": angle,
-                "sensors": {
-                    "temperature": random.randint(0,50),
-                    "humidity": random.randint(0,100),
-                    "light": random.randint(0,100)
+try:
+    for _ in range(1000):
+        # TODO: Do your stuff here
+        x, y, angle = get_position()
+        if x is not None and y is not None:
+            publish_data({
+                "id": {
+                    "x": x,
+                    "y": y,
+                    "angle": angle,
+                    "sensors": {
+                        "temperature": random.randint(0,50),
+                        "humidity": random.randint(0,100),
+                        "light": random.randint(0,100)
+                    }
                 }
-            }
-        })
-    else:
-        print("Position data not available.")
-    time.sleep(1)
-	
-    
+            })
+        else:
+            print("Position data not available.")
+        time.sleep(1)
+        
+except KeyboardInterrupt:
+    print("Interrupt detected!!")
+finally:
+    pipuck.epuck.set_motor_speeds(0,0)
+
 # Stop the MQTT client loop
 pipuck.epuck.set_motor_speeds(0,0)
 client.loop_stop()  
