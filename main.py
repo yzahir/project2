@@ -32,8 +32,9 @@ def on_message(client, userdata, msg):
             # Check if the message is a dictionary
             puck_pos_dict.update(data)
         if msg.topic == "robots/all":
-            msg_x = data.item()["x"]
-            msg_y = data.get(pi_puck_id, {}).get("y")
+            robot_id = list(data.keys())[0]
+            msg_x = data[robot_id]["x"]
+            msg_y = data[robot_id]["y"]
             print({msg_x})
             if msg_x is not None and msg_y is not None:
                 if distance(x, y, msg_x, msg_y) < max_range:
