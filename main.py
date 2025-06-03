@@ -32,10 +32,7 @@ def on_message(client, userdata, msg):
             # Check if the message is a dictionary
             puck_pos_dict.update(data)
         if msg.topic == "robots/all":
-            msg_x = data.get('id', {}).get('x')
-            msg_y = data.get('id', {}).get('y')
-            if distance(x, y, msg_x, msg_y) < max_range:
-                puck_dict.update(data)
+            msg_x = data[pi_puck_id][0]
             
     except json.JSONDecodeError:
 
