@@ -78,7 +78,7 @@ try:
         x, y, angle = get_position()
         if x is not None and y is not None:
             publish_data({
-                "id": {
+                pi_puck_id: {
                     "x": x,
                     "y": y,
                     "angle": angle,
