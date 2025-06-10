@@ -164,17 +164,16 @@ try:
         else:
             print("Position data not available.")
         time.sleep(1)
-        position_tolerance = 0.02
-        dx = 0.3 - x
-        dy = 0.5 - y
-        dist = math.hypot(dx, dy)
-        if dist < position_tolerance:
-            print(f"Reached target: ({x:.2f}, {y:.2f})")
-            break
+        if x is not None and y is not None:
+            position_tolerance = 0.02
+            dx = 0.3 - x
+            dy = 0.5 - y
+            dist = math.hypot(dx, dy)
+            if dist < position_tolerance:
+                print(f"Reached target: ({x:.2f}, {y:.2f})")
+                break
         #if set_leader():
-        move_to(0.3, 0.5)        
-        #if set_leader():
-        move_to(0.3, 0.5)
+            move_to(0.3, 0.5)        
             
 
 except KeyboardInterrupt:
