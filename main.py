@@ -13,7 +13,7 @@ max_range = 0.3
 x = 0.0
 y = 0.0
 forward_speed=500
-rotation_speed=300
+rotation_speed=100
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
 axle_radius_cm = 2.65       # 53 mm between wheels → r = 2.65 cm
 
