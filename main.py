@@ -141,6 +141,7 @@ def move_to(target_x, target_y):
     pipuck.epuck.set_motor_speeds(0, 0)  # Stop
 
     print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
+
 def wait_until_at_target(target_x, target_y, tolerance=0.05, timeout=5):
     start_time = time.time()
     while time.time() - start_time < timeout:
@@ -150,10 +151,6 @@ def wait_until_at_target(target_x, target_y, tolerance=0.05, timeout=5):
                 return True
         time.sleep(0.1)
     return False
-
-# In your main loop, after move_to:
-move_to(0.3, 0.5)
-wait_until_at_target(0.3, 0.5)
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
