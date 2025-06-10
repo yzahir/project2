@@ -141,6 +141,53 @@ def move_to(target_x, target_y):
     pipuck.epuck.set_motor_speeds(0, 0)
 
     print(f"→ rotated {diff:.1f}°, then drove {dist:.2f} m")
+def _move(target_x, target_y):
+    """
+    Rotate to face (target_x, target_y), then drive straight to it.
+    """
+    # Constants (from your C definitions)
+    TANGENTIAL_SPEED = 0.12874           # m/s (wheel angular speed * wheel radius)
+    ROBOT_ANGULAR_SPEED_DEG = 278.23739  # deg/s
+
+    # 1) get current pose
+    x_self, y_self, heading = get_position()
+    if x_self is None:
+        print("No position data; skipping move")
+        return
+
+    # 2) compute delta and distance
+    dx = target_x - x_self
+    dy = target_y - y_self
+    distance_m = math.hypot(dx, dy)
+    # desired absolute bearing, in degrees [–180..+180)
+    desired_bearing = math.degrees(math.atan2(dy, dx))
+    # how much to rotate (signed)
+    theta_dot = ((desired_bearing - heading + 180) % 360) - 180
+
+    # 3) rotate in place
+    if abs(theta_dot) > 1e-3:
+        rotate_duration = abs(theta_dot) / ROBOT_ANGULAR_SPEED_DEG
+        print(f"Rotating {theta_dot:.2f}° for {rotate_duration:.2f}s")
+        if theta_dot > 0:
+            # left wheel backward, right wheel forward
+            pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
+        else:
+            pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
+        time.sleep(rotate_duration)
+        pipuck.epuck.set_motor_speeds(0, 0)
+
+    # 4) drive straight
+    if distance_m > 1e-3:
+        drive_duration = distance_m / TANGENTIAL_SPEED
+        print(f"Driving forward {distance_m:.2f} m for {drive_duration:.2f}s")
+        # forward_speed in your code is in wheel-steps/s → convert to m/s
+        linear_speed_m_s = forward_speed * wheel_step_to_cm / 100.0
+        # but we'll ignore that and use the C constant TANGENTIAL_SPEED
+        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+        time.sleep(drive_duration)
+        pipuck.epuck.set_motor_speeds(0, 0)
+
+    print(f"Arrived at ({target_x:.2f}, {target_y:.2f})")
 
 
 try:
@@ -173,7 +220,8 @@ try:
                 print(f"Reached target: ({x:.2f}, {y:.2f})")
                 break
         #if set_leader():
-            move_to(0.3, 0.5)        
+            #move_to(0.3, 0.5)
+            _move(0.3, 0.5)  
             
 
 except KeyboardInterrupt:
