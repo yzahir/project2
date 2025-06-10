@@ -141,53 +141,59 @@ def move_to(target_x, target_y):
     pipuck.epuck.set_motor_speeds(0, 0)
 
     print(f"→ rotated {diff:.1f}°, then drove {dist:.2f} m")
-def _move(target_x, target_y):
+    
+def _move(target_x, target_y, heading_tolerance=3.0, dist_tolerance=0.02):
     """
-    Rotate to face (target_x, target_y), then drive straight to it.
+    Rotate to face (target_x, target_y) then drive forward to it using encoder + heading feedback.
+    Stops when within dist_tolerance (meters) of the target.
     """
-    # Constants (from your C definitions)
-    TANGENTIAL_SPEED = 0.12874           # m/s (wheel angular speed * wheel radius)
-    ROBOT_ANGULAR_SPEED_DEG = 278.23739  # deg/s
+    # --- helper conversions ---
+    def encoder_ticks_to_meters(ticks):
+        # each tick is one wheel step; wheel_step_to_cm in cm/tick
+        return ticks * wheel_step_to_cm / 100.0
 
-    # 1) get current pose
-    x_self, y_self, heading = get_position()
-    if x_self is None:
+    # --- 1) get current pose ---
+    x0, y0, heading = get_position()
+    if x0 is None:
         print("No position data; skipping move")
         return
 
-    # 2) compute delta and distance
-    dx = target_x - x_self
-    dy = target_y - y_self
-    distance_m = math.hypot(dx, dy)
-    # desired absolute bearing, in degrees [–180..+180)
-    desired_bearing = math.degrees(math.atan2(dy, dx))
-    # how much to rotate (signed)
-    theta_dot = ((desired_bearing - heading + 180) % 360) - 180
+    # --- 2) compute bearing and distance ---
+    dx, dy = target_x - x0, target_y - y0
+    goal_dist = math.hypot(dx, dy)
+    goal_bearing = math.degrees(math.atan2(dy, dx))
+    # normalize to [-180, +180)
+    error_bearing = ((goal_bearing - heading + 180) % 360) - 180
 
-    # 3) rotate in place
-    if abs(theta_dot) > 1e-3:
-        rotate_duration = abs(theta_dot) / ROBOT_ANGULAR_SPEED_DEG
-        print(f"Rotating {theta_dot:.2f}° for {rotate_duration:.2f}s")
-        if theta_dot > 0:
-            # left wheel backward, right wheel forward
+    # --- 3) rotate in place until within heading_tolerance ---
+    print(f"Rotating to face {goal_bearing:.1f}° (error {error_bearing:.1f}°)…")
+    while abs(error_bearing) > heading_tolerance:
+        if error_bearing > 0:
             pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
         else:
             pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
-        time.sleep(rotate_duration)
+        time.sleep(0.05)  # small step
         pipuck.epuck.set_motor_speeds(0, 0)
+        _, _, heading = get_position()
+        error_bearing = ((goal_bearing - heading + 180) % 360) - 180
 
-    # 4) drive straight
-    if distance_m > 1e-3:
-        drive_duration = distance_m / TANGENTIAL_SPEED
-        print(f"Driving forward {distance_m:.2f} m for {drive_duration:.2f}s")
-        # forward_speed in your code is in wheel-steps/s → convert to m/s
-        linear_speed_m_s = forward_speed * wheel_step_to_cm / 100.0
-        # but we'll ignore that and use the C constant TANGENTIAL_SPEED
-        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
-        time.sleep(drive_duration)
-        pipuck.epuck.set_motor_speeds(0, 0)
+    print(f"  → Aligned within ±{heading_tolerance}°.")
 
-    print(f"Arrived at ({target_x:.2f}, {target_y:.2f})")
+    # --- 4) record initial encoder ticks ---
+    left0, right0 = pipuck.epuck.get_encoders()  # returns (left_ticks, right_ticks)
+
+    # --- 5) drive forward until within dist_tolerance of goal_dist ---
+    print(f"Driving forward {goal_dist:.2f} m…")
+    pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+    while True:
+        left, right = pipuck.epuck.get_encoders()
+        traveled = (encoder_ticks_to_meters(left - left0) +
+                    encoder_ticks_to_meters(right - right0)) / 2.0
+        if traveled + dist_tolerance >= goal_dist:
+            break
+        time.sleep(0.05)
+    pipuck.epuck.set_motor_speeds(0, 0)
+    print(f"  → Reached within ±{dist_tolerance} m of target.")
 
 
 try:
