@@ -39,7 +39,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     try:
         data = json.loads(msg.payload.decode())
-        print(f"Received on {msg.topic}: {data}")
+
         if msg.topic == "robot_pos/all":
             puck_pos_dict.update(data)
 
@@ -99,7 +99,7 @@ def publish_data(packet):
     client.publish("robots/all", json.dumps(packet))
 
 def set_leader():
-    is_leader = pi_puck_id == 7 #min(puck_pos_dict.keys())
+    is_leader = pi_puck_id == min(puck_pos_dict.keys())
     if is_leader:
         print(f"PiPuck {pi_puck_id} is the leader.")
         pipuck.epuck.set_leds_colour("green")
@@ -107,6 +107,7 @@ def set_leader():
 
 def move_to(target_x, target_y):
     current_x, current_y, angle = get_position()
+    print(f"Current position: ({current_x}, {current_y}), angle: {angle}")
     if current_x is None or current_y is None or angle is None:
         print("Current position or angle not available.")
         return
@@ -140,7 +141,19 @@ def move_to(target_x, target_y):
     pipuck.epuck.set_motor_speeds(0, 0)  # Stop
 
     print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
+def wait_until_at_target(target_x, target_y, tolerance=0.05, timeout=5):
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        x, y, _ = get_position()
+        if x is not None and y is not None:
+            if math.hypot(target_x - x, target_y - y) < tolerance:
+                return True
+        time.sleep(0.1)
+    return False
 
+# In your main loop, after move_to:
+move_to(0.3, 0.5)
+wait_until_at_target(0.3, 0.5)
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
@@ -163,9 +176,9 @@ try:
             print("Position data not available.")
         time.sleep(1)
         
-        if set_leader():
-            move_to(0.3, 0.5)
-        
+        #if set_leader():
+        move_to(0.3, 0.5)
+        wait_until_at_target(0.3, 0.5)
             
 
 except KeyboardInterrupt:
