@@ -12,6 +12,8 @@ pi_puck_id = '40'
 max_range = 0.3
 x = 0.0
 y = 0.0
+target_x = 0.3
+target_y = 0.5
 forward_speed=500
 rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
@@ -143,8 +145,10 @@ def move_to(target_x, target_y):
     print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
 
     
-
-
+STATE_START = 0
+STATE_ROTATE = 1
+STATE_DRIVE = 2
+current_state = STATE_START 
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
@@ -165,9 +169,38 @@ try:
             })
         else:
             print("Position data not available.")
-        time.sleep(1)
         #if set_leader():
-            move_to(0.3, 0.5)
+            # move_to(0.3, 0.5)
+        if current_state == STATE_START:
+            print("Starting state...")
+            current_state = STATE_ROTATE
+            pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
+        elif current_state == STATE_ROTATE:
+            angle1 = math.degrees(math.atan2(target_y - y, target_x - x))
+            # now get the angle from the y-axis to the target
+            target_angle = (-angle1 + 90) % 360
+            print(f"Target Angle: {target_angle}")
+            if not (target_angle > angle + 5 or target_angle < angle - 5):
+                # Move towards the target
+                pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+                current_state = STATE_DRIVE
+            else:
+                # Turn towards the target
+                # Calculate the smallest difference between angles (handling wrap-around)
+                angle_diff = (target_angle - angle + 540) % 360 - 180
+                turn_speed = max(5 * abs(angle_diff), 100)
+                if angle_diff > 0:
+                    pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
+                else:
+                    pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
+        elif current_state == STATE_DRIVE:
+            # Check if we've reached the target
+            if abs(target_x - x) < 0.1 and abs(target_y - y) < 0.1:
+                # Stop moving towards the target
+                current_state = STATE_START
+                pipuck.epuck.set_motor_speeds(0, 0)
+        time.sleep(1)
+        
              
             
 
