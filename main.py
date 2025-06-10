@@ -134,7 +134,7 @@ def move_to(target_x, target_y, tolerance=0.05, max_steps=10):
                 pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
             time.sleep(rotation_time)
             pipuck.epuck.set_motor_speeds(0, 0)
-            time.sleep(0.1)
+            time.sleep(0.2)
             continue  # Recalculate after rotation
 
         # Move forward a small step
@@ -144,10 +144,11 @@ def move_to(target_x, target_y, tolerance=0.05, max_steps=10):
         pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
         time.sleep(move_time)
         pipuck.epuck.set_motor_speeds(0, 0)
-        time.sleep(0.1)  # Wait for position update
-
+        time.sleep(0.2)  # Wait for position update
+        print(f"Current: ({current_x:.2f}, {current_y:.2f}), angle: {angle:.2f}, target: ({target_x:.2f}, {target_y:.2f})")
+        print(f"angle_to_target: {angle_to_target:.2f}, angle_diff: {angle_diff:.2f}, distance: {distance_to_target:.2f}")
     print("Failed to reach target within max steps")
-    
+
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
