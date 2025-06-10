@@ -39,7 +39,7 @@ def on_connect(client, userdata, flags, rc):
 def on_message(client, userdata, msg):
     try:
         data = json.loads(msg.payload.decode())
-
+        print(f"Received on {msg.topic}: {data}")
         if msg.topic == "robot_pos/all":
             puck_pos_dict.update(data)
 
