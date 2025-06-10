@@ -121,7 +121,7 @@ def move_to(target_x, target_y):
     # 3) Compute rotation time
     v_r = rotation_speed * wheel_step_to_cm
     v_l = -v_r
-    track_width_cm = 5.3               # full width between wheels
+    track_width_cm = axle_radius_cm              # full width between wheels
     omega_deg_s = ((v_r - v_l) / track_width_cm) * (180 / math.pi)
     t_rot = abs(diff) / omega_deg_s
 
