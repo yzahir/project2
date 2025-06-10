@@ -143,58 +143,6 @@ def move_to(target_x, target_y):
     print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
 
     
-def _move(target_x, target_y, heading_tolerance=3.0, dist_tolerance=0.02):
-    """
-    Rotate to face (target_x, target_y) then drive forward to it using encoder + heading feedback.
-    Stops when within dist_tolerance (meters) of the target.
-    """
-    # --- helper conversions ---
-    def encoder_ticks_to_meters(ticks):
-        # each tick is one wheel step; wheel_step_to_cm in cm/tick
-        return ticks * wheel_step_to_cm / 100.0
-
-    # --- 1) get current pose ---
-    x0, y0, heading = get_position()
-    if x0 is None:
-        print("No position data; skipping move")
-        return
-
-    # --- 2) compute bearing and distance ---
-    dx, dy = target_x - x0, target_y - y0
-    goal_dist = math.hypot(dx, dy)
-    goal_bearing = math.degrees(math.atan2(dy, dx))
-    # normalize to [-180, +180)
-    error_bearing = ((goal_bearing - heading + 180) % 360) - 180
-
-    # --- 3) rotate in place until within heading_tolerance ---
-    print(f"Rotating to face {goal_bearing:.1f}° (error {error_bearing:.1f}°)…")
-    while abs(error_bearing) > heading_tolerance:
-        if error_bearing > 0:
-            pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
-        else:
-            pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
-        time.sleep(0.05)  # small step
-        pipuck.epuck.set_motor_speeds(0, 0)
-        _, _, heading = get_position()
-        error_bearing = ((goal_bearing - heading + 180) % 360) - 180
-
-    print(f"  → Aligned within ±{heading_tolerance}°.")
-
-    # --- 4) record initial encoder ticks ---
-    left0, right0 = pipuck.epuck.get_encoders()  # returns (left_ticks, right_ticks)
-
-    # --- 5) drive forward until within dist_tolerance of goal_dist ---
-    print(f"Driving forward {goal_dist:.2f} m…")
-    pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
-    while True:
-        left, right = pipuck.epuck.get_encoders()
-        traveled = (encoder_ticks_to_meters(left - left0) +
-                    encoder_ticks_to_meters(right - right0)) / 2.0
-        if traveled + dist_tolerance >= goal_dist:
-            break
-        time.sleep(0.05)
-    pipuck.epuck.set_motor_speeds(0, 0)
-    print(f"  → Reached within ±{dist_tolerance} m of target.")
 
 
 try:
@@ -227,8 +175,8 @@ try:
                 print(f"Reached target: ({x:.2f}, {y:.2f})")
                 break
         #if set_leader():
-            #move_to(0.3, 0.5)
-            _move(0.3, 0.5)  
+            move_to(0.3, 0.5)
+             
             
 
 except KeyboardInterrupt:
