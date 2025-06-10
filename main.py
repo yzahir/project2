@@ -105,52 +105,49 @@ def set_leader():
         pipuck.epuck.set_leds_colour("green")
     return is_leader
 
-def move_to(target_x, target_y):
-    current_x, current_y, angle = get_position()
-    print(f"Current position: ({current_x}, {current_y}), angle: {angle}")
-    if current_x is None or current_y is None or angle is None:
-        print("Current position or angle not available.")
-        return
+def move_to(target_x, target_y, tolerance=0.05, max_steps=10):
+    for _ in range(max_steps):
+        current_x, current_y, angle = get_position()
+        if current_x is None or current_y is None or angle is None:
+            print("Current position or angle not available.")
+            return
 
-    dx = target_x - current_x
-    dy = target_y - current_y
-    distance_to_target = math.sqrt(dx**2 + dy**2)
-    angle_to_target = math.degrees(math.atan2(dy, dx)) 
+        dx = target_x - current_x
+        dy = target_y - current_y
+        distance_to_target = math.sqrt(dx**2 + dy**2)
+        if distance_to_target < tolerance:
+            print(f"Arrived at target: ({target_x}, {target_y})")
+            pipuck.epuck.set_motor_speeds(0, 0)
+            return
 
-    angle_diff = (angle_to_target - angle + 180) % 360 - 180
+        angle_to_target = math.degrees(math.atan2(dy, dx))
+        angle_diff = (angle_to_target - angle + 180) % 360 - 180
 
-    # Calculate angular speed in deg/sec
-    wheel_speed_cm_s = rotation_speed * wheel_step_to_cm
-    angular_speed_deg_s = (wheel_speed_cm_s / axle_radius_cm) * (180 / math.pi)
+        # Rotate towards target
+        if abs(angle_diff) > 5:  # Only rotate if needed
+            wheel_speed_cm_s = rotation_speed * wheel_step_to_cm
+            angular_speed_deg_s = (wheel_speed_cm_s / axle_radius_cm) * (180 / math.pi)
+            rotation_time = abs(angle_diff) / angular_speed_deg_s
+            if angle_diff > 0:
+                pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
+            else:
+                pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
+            time.sleep(rotation_time)
+            pipuck.epuck.set_motor_speeds(0, 0)
+            time.sleep(0.1)
+            continue  # Recalculate after rotation
 
+        # Move forward a small step
+        step_distance = min(distance_to_target, 0.05)  # Move max 5cm at a time
+        linear_speed_cm_s = forward_speed * wheel_step_to_cm
+        move_time = (step_distance * 100) / linear_speed_cm_s  # m → cm
+        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+        time.sleep(move_time)
+        pipuck.epuck.set_motor_speeds(0, 0)
+        time.sleep(0.1)  # Wait for position update
 
-    # Rotate
-    rotation_time = abs(angle_diff) / angular_speed_deg_s
-    if angle_diff > 0:
-        pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)  
-    else:
-        pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)  
-    time.sleep(rotation_time)
-    pipuck.epuck.set_motor_speeds(0, 0)  
-
-    # Move forward
-    linear_speed_cm_s = forward_speed * wheel_step_to_cm
-    move_time = (distance_to_target * 100) / linear_speed_cm_s  # m → cm
-    pipuck.epuck.set_motor_speeds(rotation_speed, rotation_speed)
-    time.sleep(move_time)
-    pipuck.epuck.set_motor_speeds(0, 0)  # Stop
-
-    print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
-
-def wait_until_at_target(target_x, target_y, tolerance=0.05, timeout=5):
-    start_time = time.time()
-    while time.time() - start_time < timeout:
-        x, y, _ = get_position()
-        if x is not None and y is not None:
-            if math.hypot(target_x - x, target_y - y) < tolerance:
-                return True
-        time.sleep(0.1)
-    return False
+    print("Failed to reach target within max steps")
+    
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
@@ -175,7 +172,6 @@ try:
         
         #if set_leader():
         move_to(0.3, 0.5)
-        wait_until_at_target(0.3, 0.5)
             
 
 except KeyboardInterrupt:
