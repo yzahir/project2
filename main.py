@@ -106,41 +106,41 @@ def set_leader():
     return is_leader
 
 def move_to(target_x, target_y):
-    current_x, current_y, angle = get_position()
-    print(f"Current position: ({current_x}, {current_y}), angle: {angle}")
-    if current_x is None or current_y is None or angle is None:
-        print("Current position or angle not available.")
+    # 1) Read pose
+    x0, y0, angle0 = get_position()
+    if x0 is None:
         return
 
-    dx = target_x - current_x
-    dy = target_y - current_y
-    distance_to_target = math.sqrt(dx**2 + dy**2)
-    angle_to_target = math.degrees(math.atan2(dy, dx)) 
+    # 2) Compute desired heading & distance
+    dx = target_x - x0
+    dy = target_y - y0
+    dist  = math.hypot(dx, dy)
+    head  = math.degrees(math.atan2(dy, dx))
+    diff  = (head - angle0 + 180) % 360 - 180
 
-    angle_diff = (angle_to_target - angle + 180) % 360 - 180
+    # 3) Compute rotation time
+    v_r = rotation_speed * wheel_step_to_cm
+    v_l = -v_r
+    track_width_cm = 5.3               # full width between wheels
+    omega_deg_s = ((v_r - v_l) / track_width_cm) * (180 / math.pi)
+    t_rot = abs(diff) / omega_deg_s
 
-    # Calculate angular speed in deg/sec
-    wheel_speed_cm_s = rotation_speed * wheel_step_to_cm
-    angular_speed_deg_s = (wheel_speed_cm_s / axle_radius_cm) * (180 / math.pi)
-
-
-    # Rotate
-    rotation_time = abs(angle_diff) / angular_speed_deg_s
-    if angle_diff > 0:
-        pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)  
+    # 4) Rotate wheels in opposite directions
+    if diff > 0:
+        pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
     else:
-        pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)  
-    time.sleep(rotation_time)
-    pipuck.epuck.set_motor_speeds(0, 0)  
+        pipuck.epuck.set_motor_speeds( rotation_speed, -rotation_speed)
+    time.sleep(t_rot)
+    pipuck.epuck.set_motor_speeds(0, 0)
 
-    # Move forward
-    linear_speed_cm_s = forward_speed * wheel_step_to_cm
-    move_time = (distance_to_target * 100) / linear_speed_cm_s  # m → cm
-    pipuck.epuck.set_motor_speeds(rotation_speed, rotation_speed)
-    time.sleep(move_time)
-    pipuck.epuck.set_motor_speeds(0, 0)  # Stop
+    # 5) Drive forward at forward_speed
+    lin_cm_s = forward_speed * wheel_step_to_cm
+    t_forw   = (dist * 100) / lin_cm_s
+    pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+    time.sleep(t_forw)
+    pipuck.epuck.set_motor_speeds(0, 0)
 
-    print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
+    print(f"→ rotated {diff:.1f}°, then drove {dist:.2f} m")
 
 
 try:
