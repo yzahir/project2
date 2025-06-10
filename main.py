@@ -199,7 +199,7 @@ try:
                 # Stop moving towards the target
                 current_state = STATE_START
                 pipuck.epuck.set_motor_speeds(0, 0)
-        time.sleep(1)
+        time.sleep(0.1)
         
              
             
