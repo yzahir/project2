@@ -13,7 +13,7 @@ max_range = 0.3
 x = 0.0
 y = 0.0
 forward_speed=500
-rotation_speed=100
+rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
 axle_radius_cm = 2.65       # 53 mm between wheels → r = 2.65 cm
 
@@ -105,49 +105,43 @@ def set_leader():
         pipuck.epuck.set_leds_colour("green")
     return is_leader
 
-def move_to(target_x, target_y, tolerance=0.05, max_steps=10):
-    for _ in range(max_steps):
-        current_x, current_y, angle = get_position()
-        if current_x is None or current_y is None or angle is None:
-            print("Current position or angle not available.")
-            return
+def move_to(target_x, target_y):
+    current_x, current_y, angle = get_position()
+    print(f"Current position: ({current_x}, {current_y}), angle: {angle}")
+    if current_x is None or current_y is None or angle is None:
+        print("Current position or angle not available.")
+        return
 
-        dx = target_x - current_x
-        dy = target_y - current_y
-        distance_to_target = math.sqrt(dx**2 + dy**2)
-        if distance_to_target < tolerance:
-            print(f"Arrived at target: ({target_x}, {target_y})")
-            pipuck.epuck.set_motor_speeds(0, 0)
-            return
+    dx = target_x - current_x
+    dy = target_y - current_y
+    distance_to_target = math.sqrt(dx**2 + dy**2)
+    angle_to_target = math.degrees(math.atan2(dy, dx)) 
 
-        angle_to_target = math.degrees(math.atan2(dy, dx))
-        angle_diff = (angle_to_target - angle + 180) % 360 - 180
+    angle_diff = (angle_to_target - angle + 180) % 360 - 180
 
-        # Rotate towards target
-        if abs(angle_diff) > 5:  # Only rotate if needed
-            wheel_speed_cm_s = rotation_speed * wheel_step_to_cm
-            angular_speed_deg_s = (wheel_speed_cm_s / axle_radius_cm) * (180 / math.pi)
-            rotation_time = abs(angle_diff) / angular_speed_deg_s
-            if angle_diff > 0:
-                pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)
-            else:
-                pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
-            time.sleep(rotation_time)
-            pipuck.epuck.set_motor_speeds(0, 0)
-            time.sleep(0.2)
-            continue  # Recalculate after rotation
+    # Calculate angular speed in deg/sec
+    wheel_speed_cm_s = rotation_speed * wheel_step_to_cm
+    angular_speed_deg_s = (wheel_speed_cm_s / axle_radius_cm) * (180 / math.pi)
 
-        # Move forward a small step
-        step_distance = min(distance_to_target, 0.05)  # Move max 5cm at a time
-        linear_speed_cm_s = forward_speed * wheel_step_to_cm
-        move_time = (step_distance * 100) / linear_speed_cm_s  # m → cm
-        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
-        time.sleep(move_time)
-        pipuck.epuck.set_motor_speeds(0, 0)
-        time.sleep(0.2)  # Wait for position update
-        print(f"Current: ({current_x:.2f}, {current_y:.2f}), angle: {angle:.2f}, target: ({target_x:.2f}, {target_y:.2f})")
-        print(f"angle_to_target: {angle_to_target:.2f}, angle_diff: {angle_diff:.2f}, distance: {distance_to_target:.2f}")
-    print("Failed to reach target within max steps")
+
+    # Rotate
+    rotation_time = abs(angle_diff) / angular_speed_deg_s
+    if angle_diff > 0:
+        pipuck.epuck.set_motor_speeds(-rotation_speed, rotation_speed)  
+    else:
+        pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)  
+    time.sleep(rotation_time)
+    pipuck.epuck.set_motor_speeds(0, 0)  
+
+    # Move forward
+    linear_speed_cm_s = forward_speed * wheel_step_to_cm
+    move_time = (distance_to_target * 100) / linear_speed_cm_s  # m → cm
+    pipuck.epuck.set_motor_speeds(rotation_speed, rotation_speed)
+    time.sleep(move_time)
+    pipuck.epuck.set_motor_speeds(0, 0)  # Stop
+
+    print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
+
 
 try:
     for _ in range(1000):
