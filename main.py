@@ -102,7 +102,7 @@ def publish_data(packet):
 def set_leader():
     global is_leader
     try:
-        is_leader = int(pi_puck_id) <= min(puck_dict.keys(), key=int)
+        is_leader = all(pi_puck_id <= rid for rid in puck_dict.keys())
         if is_leader:
             print(f"PiPuck {pi_puck_id} is the leader.")
         #     # pipuck.epuck.set_leds_colour("green")
