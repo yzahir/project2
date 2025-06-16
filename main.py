@@ -7,7 +7,7 @@ import math
 import socket
 
 # Define variables and callbacks
-Broker = "192.168.178.56"  # Replace with your broker address
+Broker = "192.168.178.149"  # Replace with your broker address
 Port = 1883 # standard MQTT port
 pi_puck_id = socket.gethostname().replace("pi-puck", "")  # Get the PiPuck ID from the hostname
 max_range = 0.3
@@ -185,21 +185,19 @@ STATE_ROTATE_TO_90 = 3
 current_state = STATE_START 
 try:
     for _ in range(1000):
-        # TODO: Do your stuff here
         print(f'puck_dict: {puck_dict}')
         x, y, angle = get_position()
         if x is not None and y is not None:
             publish_data({
-                pi_puck_id: {
-                    "x": x,
-                    "y": y,
-                    "angle": angle,
-                    "sensors": {
-                        "temperature": random.randint(0,50),
-                        "humidity": random.randint(0,100),
-                        "light": random.randint(0,100)
-                    }
-                }
+                "id": pi_puck_id,
+                "position": [x, y],
+                "angle": angle,
+                "sensors": {
+                    "temperature": random.randint(0, 50),
+                    "humidity": random.randint(0, 100),
+                    "light": random.randint(0, 100)
+                },
+                "found_target": False
             })
         else:
             print("Position data not available.")
