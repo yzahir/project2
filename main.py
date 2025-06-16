@@ -227,6 +227,7 @@ try:
                 my_index = puck_keys.index(pi_puck_id) if pi_puck_id in puck_keys else -1
                 print(f"My position in sorted list: {my_index}")
                 target_y += my_index * 0.1  # Offset y position based on index
+                print(f"Target position set to: ({target_x}, {target_y})")
                 current_state = STATE_START_ROTATE
         elif current_state == STATE_START_ROTATE:
             # Rotate to face the target
