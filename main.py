@@ -13,6 +13,7 @@ pi_puck_id = socket.gethostname().replace("pi-puck", "")  # Get the PiPuck ID fr
 max_range = 0.3
 x = 0.0
 y = 0.0
+angle = 0.0
 target_x = 0.1
 target_y = 0.5
 forward_speed=500
@@ -84,8 +85,6 @@ pipuck = PiPuck(epuck_version=2)
 #pipuck.epuck.set_motor_speeds(1000,-1000)
 
 def get_position(id=pi_puck_id):
-    global x, y
-
     data = puck_pos_dict.get(id)
     if data:
         pos = data.get('position')
@@ -166,9 +165,23 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
     
+def rotate_to_angle(target_angle):
+    angle_diff = (target_angle - angle + 540) % 360 - 180
+    turn_speed = max(5 * abs(angle_diff), 100)
+    if not (target_angle > angle + 5 or target_angle < angle - 5):
+        # Move towards the target
+        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+        return STATE_START_DRIVE
+    if angle_diff > 0:
+        pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
+    else:
+        pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
+    return STATE_ROTATE_TO_90
+    
 STATE_START = 0
 STATE_START_ROTATE = 1
 STATE_START_DRIVE = 2
+STATE_ROTATE_TO_90 = 3
 current_state = STATE_START 
 try:
     for _ in range(1000):
@@ -205,6 +218,8 @@ try:
                 # Stop moving towards the target
                 current_state = STATE_START
                 pipuck.epuck.set_motor_speeds(0, 0)
+        elif current_state == STATE_ROTATE_TO_90:
+            current_state = rotate_to_angle(90)
         time.sleep(0.1)
         
              
