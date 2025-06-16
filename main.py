@@ -9,7 +9,7 @@ import socket
 # Define variables and callbacks
 Broker = "192.168.178.149"  # Replace with your broker address
 Port = 1883 # standard MQTT port
-pi_puck_id = socket.gethostname().replace("pi-puck", "")  # Get the PiPuck ID from the hostname
+pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '17'
 max_range = 0.3
 x = 0.0
 y = 0.0
