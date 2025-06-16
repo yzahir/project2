@@ -196,8 +196,8 @@ start_waiting = 50
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
-        print(f'puck_dict: {puck_dict}')
-        print(f'target_x: {target_x}, target_y: {target_y}')
+        # print(f'puck_dict: {puck_dict}')
+        # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
         if x is not None and y is not None:
             publish_data({
