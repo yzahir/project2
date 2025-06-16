@@ -166,12 +166,12 @@ def rotate_to_target():
         return STATE_START_ROTATE
     
 def rotate_to_angle(target_angle):
-    angle_diff = (target_angle - angle + 540) % 360 - 180
-    turn_speed = max(5 * abs(angle_diff), 100)
     if not (target_angle > angle + 5 or target_angle < angle - 5):
         # Move towards the target
         pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
         return STATE_START_DRIVE
+    angle_diff = (target_angle - angle + 540) % 360 - 180
+    turn_speed = max(5 * abs(angle_diff), 100)
     if angle_diff > 0:
         pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
     else:
@@ -187,7 +187,7 @@ try:
     for _ in range(1000):
         print(f'puck_dict: {puck_dict}')
         x, y, angle = get_position()
-        if x is not None and y is not None:
+        if x is not None and y is not None and angle is not None:
             publish_data({
                 "id": pi_puck_id,
                 "position": [x, y],
