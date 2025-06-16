@@ -9,7 +9,7 @@ import socket
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
 Port = 1883 # standard MQTT port
-pi_puck_id = '14'
+pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '17'
 max_range = 0.3
 x = 0.0
 y = 0.0
@@ -174,7 +174,6 @@ current_state = STATE_START
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
-        print (f'Hostname: {socket.gethostname()}')
         print(f'puck_dict: {puck_dict}')
         x, y, angle = get_position()
         if x is not None and y is not None:
