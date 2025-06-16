@@ -105,14 +105,14 @@ def set_leader():
         is_leader = pi_puck_id == min(puck_pos_dict.keys())
         if is_leader:
             print(f"PiPuck {pi_puck_id} is the leader.")
-            pipuck.epuck.set_leds_colour("green")
-        else:
-            pipuck.epuck.set_leds_colour("red")
+        #     # pipuck.epuck.set_leds_colour("green")
+        # else:
+        #     # pipuck.epuck.set_leds_colour("red")
         return is_leader
     except ValueError:
         print("No PiPucks available to determine leader.")
         is_leader = False
-        pipuck.epuck.set_leds_colour("red")
+        # pipuck.epuck.set_leds_colour("red")
         return is_leader
     
 
