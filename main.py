@@ -186,7 +186,8 @@ try:
                         "temperature": random.randint(0,50),
                         "humidity": random.randint(0,100),
                         "light": random.randint(0,100)
-                    }
+                    },
+                    "target_found": False,
                 }
             })
         else:
