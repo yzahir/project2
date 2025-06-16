@@ -172,9 +172,23 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
     
+def rotate_to_angle(target_angle):
+    angle_diff = (target_angle - angle + 540) % 360 - 180
+    turn_speed = max(5 * abs(angle_diff), 100)
+    if not (target_angle > angle + 5 or target_angle < angle - 5):
+        # Move towards the target
+        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
+        return STATE_START_DRIVE
+    if angle_diff > 0:
+        pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
+    else:
+        pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
+    return STATE_ROTATE_TO_90
+    
 STATE_START = 0
 STATE_START_ROTATE = 1
 STATE_START_DRIVE = 2
+STATE_ROTATE_TO_90 = 3
 current_state = STATE_START
 start_waiting = 50
 try:
@@ -213,8 +227,9 @@ try:
             # Check if we've reached the target
             if abs(target_x - x) < 0.1 and abs(target_y - y) < 0.1:
                 # Stop moving towards the target
-                current_state = STATE_START
-                pipuck.epuck.set_motor_speeds(0, 0)
+                current_state = STATE_ROTATE_TO_90
+        elif current_state == STATE_ROTATE_TO_90:
+            rotate_to_angle(90)  # Rotate to 90 degrees
         time.sleep(0.1)
         
              
