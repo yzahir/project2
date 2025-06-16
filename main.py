@@ -16,7 +16,8 @@ y = 0.0
 angle = 0.0
 is_leader = False
 target_x = 0.1
-target_y = 0.5
+target_y = 0.1
+ready = False
 forward_speed=500
 rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
@@ -51,8 +52,8 @@ def on_message(client, userdata, msg):
         if msg.topic == "robots/all":
             x_self, y_self, _ = get_position()
             for robot_id, robot_data in data.items():
-                if robot_id == pi_puck_id:
-                    continue  
+                # if robot_id == pi_puck_id:
+                #     continue  
                 msg_x = robot_data.get("x")
                 msg_y = robot_data.get("y")
 
@@ -177,8 +178,8 @@ def rotate_to_angle(target_angle):
     turn_speed = max(5 * abs(angle_diff), 100)
     if not (target_angle > angle + 5 or target_angle < angle - 5):
         # Move towards the target
-        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
-        return STATE_START_DRIVE
+        pipuck.epuck.set_motor_speeds(0, 0)
+        return STATE_START_WAIT
     if angle_diff > 0:
         pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
     else:
@@ -189,6 +190,7 @@ STATE_START = 0
 STATE_START_ROTATE = 1
 STATE_START_DRIVE = 2
 STATE_ROTATE_TO_90 = 3
+STATE_START_WAIT = 4
 current_state = STATE_START
 start_waiting = 50
 try:
@@ -208,6 +210,7 @@ try:
                         "light": random.randint(0,100)
                     },
                     "target_found": False,
+                    "ready": ready
                 }
             })
         else:
@@ -218,8 +221,12 @@ try:
             if start_waiting > 0:
                 start_waiting -= 1
             else:
-                if is_leader:
-                    current_state = STATE_START_ROTATE
+                puck_keys = sorted(puck_dict.keys())
+                print(f"Sorted keys of puck_dict: {puck_keys}")
+                my_index = puck_keys.index(pi_puck_id) if pi_puck_id in puck_keys else -1
+                print(f"My position in sorted list: {my_index}")
+                target_y += my_index * 0.1  # Offset y position based on index
+                current_state = STATE_START_ROTATE
         elif current_state == STATE_START_ROTATE:
             # Rotate to face the target
             current_state = rotate_to_target()
@@ -230,6 +237,13 @@ try:
                 current_state = STATE_ROTATE_TO_90
         elif current_state == STATE_ROTATE_TO_90:
             rotate_to_angle(90)  # Rotate to 90 degrees
+        elif current_state == STATE_START_WAIT:
+            # Check if all robots are ready
+            ready = True
+            if all(robot.get("ready") for robot in puck_dict.values()):
+                print("All robots are ready. Starting...")
+                ready = False
+                break
         time.sleep(0.1)
         
              
