@@ -13,7 +13,6 @@ pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname()
 max_range = 0.3
 x = 0.0
 y = 0.0
-angle = 0.0
 target_x = 0.1
 target_y = 0.5
 forward_speed=500
