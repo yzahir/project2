@@ -154,6 +154,7 @@ def move_to(target_x, target_y):
 
 
 def rotate_to_target():
+    print(f'Rotating to target position: ({target_x}, {target_y})')
     angle1 = math.degrees(math.atan2(target_y - y, target_x - x))
     # now get the angle from the y-axis to the target
     target_angle = (-angle1 + 90) % 360
