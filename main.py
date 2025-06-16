@@ -49,7 +49,6 @@ def on_message(client, userdata, msg):
 
         if msg.topic == "robots/all":
             x_self, y_self, _ = get_position()
-            robots_in_range = set()
             for robot_id, robot_data in data.items():
                 if robot_id == pi_puck_id:
                     continue  
@@ -59,9 +58,6 @@ def on_message(client, userdata, msg):
                 dist = distance(x_self, y_self, msg_x, msg_y)
                 if dist < max_range:
                     puck_dict[robot_id] = robot_data
-                    robots_in_range.add(robot_id)
-                
-            remove_out_of_range_robots(puck_dict, robots_in_range)
 
     except json.JSONDecodeError:
         print(f'invalid json: {msg.payload}')
