@@ -14,6 +14,7 @@ max_range = 0.3
 x = 0.0
 y = 0.0
 angle = 0.0
+is_leader = False
 target_x = 0.1
 target_y = 0.5
 forward_speed=500
@@ -104,6 +105,7 @@ def set_leader():
         print(f"PiPuck {pi_puck_id} is the leader.")
         pipuck.epuck.set_leds_colour("green")
     return is_leader
+    
 
 def move_to(target_x, target_y):
     current_x, current_y, angle = get_position()
@@ -166,7 +168,8 @@ def rotate_to_target():
 STATE_START = 0
 STATE_START_ROTATE = 1
 STATE_START_DRIVE = 2
-current_state = STATE_START 
+current_state = STATE_START
+start_waiting = 50
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
@@ -188,12 +191,14 @@ try:
             })
         else:
             print("Position data not available.")
-        #if set_leader():
-            # move_to(0.3, 0.5)
+        is_leader = set_leader()
         if current_state == STATE_START:
             print("Starting state...")
-            current_state = STATE_START_ROTATE
-            pipuck.epuck.set_motor_speeds(rotation_speed, -rotation_speed)
+            if start_waiting > 0:
+                start_waiting -= 1
+            else:
+                if is_leader:
+                    current_state = STATE_START_ROTATE
         elif current_state == STATE_START_ROTATE:
             # Rotate to face the target
             current_state = rotate_to_target()
