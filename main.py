@@ -4,7 +4,6 @@ import time
 from pipuck.pipuck import PiPuck
 import random
 import math
-import socket
 
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
@@ -84,6 +83,8 @@ pipuck = PiPuck(epuck_version=2)
 #pipuck.epuck.set_motor_speeds(1000,-1000)
 
 def get_position(id=pi_puck_id):
+    global x, y
+
     data = puck_pos_dict.get(id)
     if data:
         pos = data.get('position')
@@ -164,39 +165,27 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
     
-def rotate_to_angle(target_angle):
-    if not (target_angle > angle + 5 or target_angle < angle - 5):
-        # Move towards the target
-        pipuck.epuck.set_motor_speeds(forward_speed, forward_speed)
-        return STATE_START_DRIVE
-    angle_diff = (target_angle - angle + 540) % 360 - 180
-    turn_speed = max(5 * abs(angle_diff), 100)
-    if angle_diff > 0:
-        pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
-    else:
-        pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
-    return STATE_ROTATE_TO_90
-    
 STATE_START = 0
 STATE_START_ROTATE = 1
 STATE_START_DRIVE = 2
-STATE_ROTATE_TO_90 = 3
 current_state = STATE_START 
 try:
     for _ in range(1000):
+        # TODO: Do your stuff here
         print(f'puck_dict: {puck_dict}')
         x, y, angle = get_position()
-        if x is not None and y is not None and angle is not None:
+        if x is not None and y is not None:
             publish_data({
-                "id": pi_puck_id,
-                "position": [x, y],
-                "angle": angle,
-                "sensors": {
-                    "temperature": random.randint(0, 50),
-                    "humidity": random.randint(0, 100),
-                    "light": random.randint(0, 100)
-                },
-                "found_target": False
+                pi_puck_id: {
+                    "x": x,
+                    "y": y,
+                    "angle": angle,
+                    "sensors": {
+                        "temperature": random.randint(0,50),
+                        "humidity": random.randint(0,100),
+                        "light": random.randint(0,100)
+                    }
+                }
             })
         else:
             print("Position data not available.")
@@ -215,8 +204,6 @@ try:
                 # Stop moving towards the target
                 current_state = STATE_START
                 pipuck.epuck.set_motor_speeds(0, 0)
-        elif current_state == STATE_ROTATE_TO_90:
-            current_state = rotate_to_angle(90)
         time.sleep(0.1)
         
              
