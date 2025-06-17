@@ -23,6 +23,11 @@ rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
 axle_radius_cm = 2.65       # 53 mm between wheels → r = 2.65 cm
 
+# Arena parameters
+StartX     = 0.1
+SweepEndX  = 1.9   # 2m arena minus 0.1 margin
+ArenaMaxY  = 1.0
+
 puck_pos_dict = {}
 puck_dict = {}
 
@@ -79,8 +84,6 @@ client.loop_start() # Start listening loop in separate thread
 # Initialize the PiPuck
 pipuck = PiPuck(epuck_version=2)
 
-# Set the robot's speed, e.g. with
-#pipuck.epuck.set_motor_speeds(1000,-1000)
 
 def get_position(id=pi_puck_id):
     global x, y
@@ -152,7 +155,8 @@ def move_to(target_x, target_y):
 
     print(f"Moved to target position: ({target_x}, {target_y}) from ({current_x}, {current_y})")
 
-
+def extract_int(s):     return int(''.join(filter(str.isdigit, s)))
+def normalize_angle_deg(a): return a % 360
 def rotate_to_target():
     print(f'Rotating to target position: ({target_x}, {target_y})')
     angle1 = math.degrees(math.atan2(target_y - y, target_x - x))
@@ -173,6 +177,20 @@ def rotate_to_target():
         else:
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
+
+def drive_forward_stepwise(tx, ty, spd=forward_speed):
+    global start_position
+    x,y,_ = get_position()
+    if start_position is None:
+        start_position = (x,y)
+    d = distance(x,y,tx,ty)
+    print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
+    if d < 0.05:
+        pipuck.epuck.set_motor_speeds(0, 0)
+        start_position = None
+        return True
+    pipuck.epuck.set_motor_speeds(spd, spd)
+    return False
     
 def rotate_to_angle(target_angle):
     angle_diff = (target_angle - angle + 540) % 360 - 180
@@ -180,19 +198,56 @@ def rotate_to_angle(target_angle):
     if not (target_angle > angle + 5 or target_angle < angle - 5):
         # Move towards the target
         pipuck.epuck.set_motor_speeds(0, 0)
-        return STATE_START_WAIT
+        #return STATE_START_WAIT
     if angle_diff > 0:
         pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
     else:
         pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
     return STATE_ROTATE_TO_90
+
+def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
+    dx = tx - x
+    dy = ty - y
+    angle1 = math.degrees(math.atan2(dy, dx))
+    targ_ang = (-angle1 + 90) % 360
+
+    diff = (targ_ang - ang + 540) % 360 - 180
+    print(f"[{pi_puck_id}] Rotating→ T:{targ_ang:.1f} C:{ang:.1f} Δ:{diff:.1f}")
+    if abs(diff) < thresh:
+        pipuck.epuck.set_motor_speeds(0, 0)
+        return True
+    spd = max(min(0.05*diff, rotation_speed), 100)
+    if diff > 0:
+        pipuck.epuck.set_motor_speeds(spd, -spd)
+    else:
+        pipuck.epuck.set_motor_speeds(-spd, spd)
+    #pipuck.epuck.set_motor_speeds(spd if diff>0 else -spd,-spd if diff>0 else spd)
+    return False
     
-STATE_START = 0
-STATE_START_ROTATE = 1
-STATE_START_DRIVE = 2
-STATE_ROTATE_TO_90 = 3
-STATE_START_WAIT = 4
+# States
+STATE_START         = 0
+STATE_WAIT_FOR_NEIGHBORS = 1
+STATE_START_ROTATE  = 2
+STATE_START_DRIVE   = 3
+STATE_LINE_REACHED  = 4
+STATE_START_SWEEP   = 5
+STATE_SWEEP_DRIVE   = 6
+STATE_ADVANCE_ROW   = 7
+STATE_ROW_ROTATE    = 8
+STATE_ROW_DRIVE     = 9
+STATE_DONE          = 10
+STATE_ROTATE_TO_90  = 11
+
 current_state = STATE_START
+role          = "UNKNOWN"
+target_x      = None
+target_y      = None
+start_position = None
+
+# Row-sweeping globals
+rowY      = None
+spacing   = None
+sweep_direction = 1  # 1=right, -1=left
 start_waiting = 50
 try:
     for _ in range(1000):
@@ -218,36 +273,77 @@ try:
         else:
             print("Position data not available.")
         set_leader()
+        
+
+        
         if current_state == STATE_START:
             print("Starting state...")
             if start_waiting > 0:
                 start_waiting -= 1
+                print(f"Waiting for neighbors... {start_waiting} iterations left.")
             else:
                 puck_keys = sorted(puck_dict.keys())
-                print(f"Sorted keys of puck_dict: {puck_keys}")
-                my_index = puck_keys.index(pi_puck_id) if pi_puck_id in puck_keys else -1
-                print(f"My position in sorted list: {my_index}")
-                target_y += my_index * 0.5  # Offset y position based on index
-                print(f"Target position set to: ({target_x}, {target_y})")
-                current_state = STATE_START_ROTATE
+                all_ids = sorted(list(puck_dict.keys()) + [pi_puck_id], key=extract_int)
+                
+                if spacing is None and len(all_ids) > 0:
+                    spacing = min(max_range * 0.9, ArenaMaxY / len(all_ids))
+                current_state = STATE_WAIT_FOR_NEIGHBORS
+        elif current_state == STATE_WAIT_FOR_NEIGHBORS:
+            print(f"Waiting for neighbors... {len(puck_dict)} found.")
+            if len(all_ids) < 0:
+                continue
+            role      = "LEADER" if int(pi_puck_id)==min(map(int,all_ids)) else "FOLLOWER"
+            idx       = all_ids.index(pi_puck_id)
+            target_x  = StartX
+            target_y  = rowY + idx*spacing
+            print(f"I am {role} idx={idx}, lineY={rowY:.2f}, target=({target_x:.2f},{target_y:.2f})")
+            current_state = STATE_START_ROTATE
+                        
         elif current_state == STATE_START_ROTATE:
-            # Rotate to face the target
-            current_state = rotate_to_target()
+            if rotate_to_target_stepwise(x,y,angle,target_x,target_y):
+                current_state = STATE_START_DRIVE
+
         elif current_state == STATE_START_DRIVE:
-            # Check if we've reached the target
-            if abs(target_x - x) < 0.1 and abs(target_y - y) < 0.1:
-                # Stop moving towards the target
-                current_state = STATE_ROTATE_TO_90
-        elif current_state == STATE_ROTATE_TO_90:
-            rotate_to_angle(90)  # Rotate to 90 degrees
-        elif current_state == STATE_START_WAIT:
-            # Check if all robots are ready
-            ready = True
-            if all(robot.get("ready") for robot in puck_dict.values()):
-                print("All robots are ready. Starting...")
-                ready = False
-                break
-        time.sleep(0.1)
+            if drive_forward_stepwise(target_x,target_y):
+                print(f"{pi_puck_id} formed line.")
+                target_x = SweepEndX if sweep_direction == 1 else StartX
+                current_state = STATE_START_SWEEP
+
+        elif current_state == STATE_START_SWEEP:
+            if rotate_to_target_stepwise(x,y,angle,target_x,target_y):
+                current_state = STATE_SWEEP_DRIVE
+
+        elif current_state == STATE_SWEEP_DRIVE:
+            if drive_forward_stepwise(target_x,target_y):
+                print(f"{pi_puck_id} sweep row complete.")
+                current_state = STATE_ADVANCE_ROW
+
+        elif current_state == STATE_ADVANCE_ROW:
+            if rowY + spacing > ArenaMaxY - spacing:
+                current_state = STATE_DONE
+            else:
+                rowY += spacing
+                idx = all_ids.index(pi_puck_id)
+                target_y = rowY + idx*spacing
+                current_state = STATE_ROW_ROTATE
+
+        elif current_state == STATE_ROW_ROTATE:
+            # Turn to new row position (Y changes, X remains)
+            print(f"{pi_puck_id} rotating to rowY={target_y:.2f}")
+            if rotate_to_target_stepwise(x, y, angle, x, target_y):
+                current_state = STATE_ROW_DRIVE
+
+        elif current_state == STATE_ROW_DRIVE:
+            if drive_forward_stepwise(x, target_y):
+                sweep_direction *= -1
+                target_x = SweepEndX if sweep_direction == 1 else StartX
+                current_state = STATE_START_SWEEP
+
+        elif current_state == STATE_DONE:
+            pipuck.epuck.set_motor_speeds(0, 0)
+            print(f"{pi_puck_id} DONE sweeping.")
+            time.sleep(0.1)
+            break
         
              
             
