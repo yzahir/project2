@@ -9,7 +9,7 @@ import socket
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
 Port = 1883 # standard MQTT port
-pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '40'
+pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '35'
 max_range = 0.3
 x = 0.0
 y = 0.0
@@ -35,6 +35,8 @@ spacing    = None
 sweep_direction = 1  # 1=right, -1=left
 puck_dict = {}
 puck_pos_dict = {}
+rows_swept = 0
+
 
 def distance(x1, y1, x2, y2):
     return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
@@ -294,15 +296,15 @@ try:
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             if drive_forward_stepwise(target_x,target_y):
                 print(f"{pi_puck_id} sweep row complete.")
-                sweeps_per_rbt -= 1
+                #sweeps_per_rbt -= 1
+                rows_swept += 1
                 current_state = STATE_ADVANCE_ROW
 
 
         elif current_state == STATE_ADVANCE_ROW:
            print(f"{pi_puck_id} STATE_ADVANCE_ROW.")
            idx = all_ids.index(pi_puck_id)
-           sweep_count = total_sweeps - sweeps_per_rbt
-           next_row_index = idx + sweep_count * len(all_ids)
+           next_row_index = idx + rows_swept * len(all_ids)
            next_row_y = next_row_index * spacing
            if next_row_y >= ArenaMaxY:
               current_state = STATE_DONE
@@ -343,4 +345,3 @@ finally:
 # Stop the MQTT client loop
 pipuck.epuck.set_motor_speeds(0,0)
 client.loop_stop()  
-
