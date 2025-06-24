@@ -9,7 +9,7 @@ import socket
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
 Port = 1883 # standard MQTT port
-pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '16'
+pi_puck_id = socket.gethostname().replace("pi-puck", "") if socket.gethostname().startswith("pi-puck") else '35'
 max_range = 0.3
 x = 0.0
 y = 0.0
@@ -240,29 +240,31 @@ try:
         else:
             print("Position data not available.")
             
-        all_ids    = sorted(list(puck_dict.keys())+[pi_puck_id], key=extract_int)
+        all_ids = sorted(list(set(puck_dict.keys()) | {pi_puck_id}), key=extract_int)
                 
         if spacing is None and len(all_ids) >= 2:
             spacing = min(max_range*0.9, ArenaMaxY/len(all_ids))
             rowY    = 0.1
             total_sweeps = math.ceil(ArenaMaxY / spacing)
             sweeps_per_rbt = math.ceil(total_sweeps / len(all_ids))
-        
+            print(f"total_sweeps: {total_sweeps}, sweeps_per_rbt: {sweeps_per_rbt}, spacing: {spacing}")
 
         if current_state == STATE_START:
             print("Starting state...")
             current_state = STATE_WAIT_FOR_NEIGHBORS
-                
+
         elif current_state == STATE_WAIT_FOR_NEIGHBORS:
             print(f"Waiting for neighbors... {len(puck_dict)} found.")
             if len(all_ids) < 2:
+                current_state = STATE_START
                 continue
-            role      = "LEADER" if int(pi_puck_id)==min(map(int,all_ids)) else "FOLLOWER"
-            idx       = all_ids.index(pi_puck_id)
-            target_x  = StartX
-            target_y  = rowY + idx*spacing
-            print(f"I am {role} idx={idx}, lineY={rowY:.2f}, target=({target_x:.2f},{target_y:.2f})")
-            current_state = STATE_START_ROTATE
+            else:
+                role      = "LEADER" if int(pi_puck_id)==min(map(int,all_ids)) else "FOLLOWER"
+                idx       = all_ids.index(pi_puck_id)
+                target_x  = StartX
+                target_y  = rowY + idx*spacing
+                print(f"I am {role} idx={idx}, lineY={rowY:.2f}, target=({target_x:.2f},{target_y:.2f})")
+                current_state = STATE_START_ROTATE
                         
         elif current_state == STATE_START_ROTATE:
             print(f"{pi_puck_id} STATE_START_ROTATE at Y={target_y:.2f}, direction={sweep_direction}")
