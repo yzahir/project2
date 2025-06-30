@@ -185,7 +185,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
     #pipuck.epuck.set_motor_speeds(spd if diff>0 else -spd,-spd if diff>0 else spd)
     return False
 
-def neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=2):
+def neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=1):
    idx = all_ids.index(pi_puck_id)
    left_id = all_ids[idx - 1] if idx > 0 else None
    right_id = all_ids[idx + 1] if idx < len(all_ids) - 1 else None
