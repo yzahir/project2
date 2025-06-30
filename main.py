@@ -160,7 +160,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
         start_position = (x,y)
     d = distance(x,y,tx,ty)
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
-    if d < 0.1:
+    if d < 0.2:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         return True
@@ -179,7 +179,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
     if abs(diff) < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         return True
-    spd = max(2*diff, 50)
+    spd = max(5*diff, 50)
     if diff > 0:
         pipuck.epuck.set_motor_speeds(spd, -spd)
     else:
