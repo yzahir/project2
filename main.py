@@ -77,6 +77,8 @@ def on_message(client, userdata, msg):
                 dist = distance(x_self, y_self, msg_x, msg_y)
                 if dist <= max_range:
                     puck_dict[robot_id] = robot_data
+                if robot_data.get("ready", False):
+                    ready_counts[robot_id] += 1
 
     except json.JSONDecodeError:
         print(f'invalid json: {msg.payload}')
