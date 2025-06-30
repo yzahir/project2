@@ -5,6 +5,8 @@ from pipuck.pipuck import PiPuck
 import random
 import math
 import socket
+import threading
+from collections import defaultdict
 
 # Define variables and callbacks
 Broker = "192.168.178.56"  # Replace with your broker address
@@ -23,7 +25,6 @@ ready = False
 StartX     = 0.1
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
-ArenaMaxX  = 2.0
 
 forward_speed=500
 rotation_speed=300
@@ -37,6 +38,9 @@ sweep_direction = 1  # 1=right, -1=left
 puck_dict = {}
 puck_pos_dict = {}
 rows_swept = 0
+ack_received_from = set()
+ready_counts = defaultdict(lambda: 0)  # 
+seen_ready_this_row = set()
 
 
 def distance(x1, y1, x2, y2):
@@ -147,36 +151,12 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
 
-def collsion_detected(x, y, radius = 0.0):
-    # Check for collision with other robots
-    for key, value in puck_dict.items():
-        if key != pi_puck_id:
-            other_x = value.get("x")
-            other_y = value.get("y")
-            if other_x is not None and other_y is not None:
-                distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
-                if distance_to_other < radius:
-                    # Calculate angle to other robot
-                    angle_to_other = math.degrees(math.atan2(other_y - y, other_x - x))
-                    # Convert to robot's coordinate system (y-axis reference)
-                    angle_to_other = (-angle_to_other + 90) % 360
-                    
-                    # Check if robot is pointing towards the other robot (within 45 degrees)
-                    angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
-                    if angle_diff < 45:  # Robot is pointing towards other robot
-                        return True, key
-    return False, None
-
 def drive_forward_stepwise(tx, ty, spd=forward_speed):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
         start_position = (x,y)
     d = distance(x,y,tx,ty)
-    if collsion_detected(x, y, radius=0.01)[0]:
-        print(f"[{pi_puck_id}] Collision detected! Stopping.")
-        pipuck.epuck.set_motor_speeds(0, 0)
-        return False
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     if d < 0.1:
         pipuck.epuck.set_motor_speeds(0, 0)
@@ -185,18 +165,6 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     pipuck.epuck.set_motor_speeds(spd, spd)
     return False
     
-def rotate_to_angle(target_angle):
-    angle_diff = (target_angle - angle + 540) % 360 - 180
-    turn_speed = max(5 * abs(angle_diff), 100)
-    if not (target_angle > angle + 2 or target_angle < angle - 2):
-        # Move towards the target
-        pipuck.epuck.set_motor_speeds(0, 0)
-        #return STATE_START_WAIT
-    if angle_diff > 0:
-        pipuck.epuck.set_motor_speeds(turn_speed, -turn_speed)
-    else:
-        pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
-    return STATE_ROTATE_TO_90
 
 def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
     dx = tx - x
@@ -216,7 +184,17 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
         pipuck.epuck.set_motor_speeds(-spd, spd)
     #pipuck.epuck.set_motor_speeds(spd if diff>0 else -spd,-spd if diff>0 else spd)
     return False
-    
+def neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=3):
+   idx = all_ids.index(pi_puck_id)
+   left_id = all_ids[idx - 1] if idx > 0 else None
+   right_id = all_ids[idx + 1] if idx < len(all_ids) - 1 else None
+   
+
+def input_thread():
+    global user_command
+    while True:
+        user_command = input("Enter command: ")
+
 # States
 STATE_START         = 0
 STATE_WAIT_FOR_NEIGHBORS = 1
@@ -229,7 +207,8 @@ STATE_ADVANCE_ROW   = 7
 STATE_ROW_ROTATE    = 8
 STATE_ROW_DRIVE     = 9
 STATE_DONE          = 10
-STATE_ROTATE_TO_90  = 11
+STATE_WAIT_FOR_NEIGHBORS_READY  = 11
+
 
 current_state = STATE_START
 role          = "UNKNOWN"
@@ -242,6 +221,9 @@ rowY      = None
 spacing   = None
 sweep_direction = 1  # 1=right, -1=left
 start_waiting = 50
+
+threading.Thread(target=input_thread, daemon=True).start()
+
 try:
     for _ in range(1000):
         # TODO: Do your stuff here
@@ -303,6 +285,7 @@ try:
         elif current_state == STATE_START_ROTATE:
             print(f"{pi_puck_id} STATE_START_ROTATE at Y={target_y:.2f}, direction={sweep_direction}")
             if rotate_to_target_stepwise(x,y,angle,target_x,target_y):
+                
                 current_state = STATE_START_DRIVE
 
         elif current_state == STATE_START_DRIVE:
@@ -312,10 +295,21 @@ try:
                 target_x = SweepEndX if sweep_direction == 1 else StartX         
                 current_state = STATE_START_SWEEP
 
+        elif current_state == STATE_WAIT_FOR_NEIGHBORS_READY:
+            # Wait for left and right neighbors to be ready
+            left_ready, right_ready = neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=1)
+            if left_ready and right_ready:
+                print(f"{pi_puck_id} neighbors ready, start sweeping!")
+                current_state = STATE_SWEEP_DRIVE
+                ready = False  # Reset for next row
+            else:
+                print(f"{pi_puck_id} waiting for neighbors... ready_counts={dict(ready_counts)}")
+
         elif current_state == STATE_START_SWEEP:
            print(f"{pi_puck_id} STATE_START_SWEEP at Y={target_y:.2f}, direction={sweep_direction}")
            if rotate_to_target_stepwise(x,y,angle,target_x,target_y):
-              current_state = STATE_SWEEP_DRIVE
+               ready = True  
+               current_state = STATE_WAIT_FOR_NEIGHBORS_READY
 
         elif current_state == STATE_SWEEP_DRIVE:
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
@@ -327,15 +321,29 @@ try:
 
 
         elif current_state == STATE_ADVANCE_ROW:
-           print(f"{pi_puck_id} STATE_ADVANCE_ROW.")
-           idx = all_ids.index(pi_puck_id)
-           next_row_index = idx + rows_swept * len(all_ids)
-           next_row_y = next_row_index * spacing
-           if next_row_y >= ArenaMaxY:
-              current_state = STATE_DONE
-           else:
-              target_y = next_row_y
-              current_state = STATE_ROW_ROTATE
+            print(f"{pi_puck_id} STATE_ADVANCE_ROW.")
+            idx = all_ids.index(pi_puck_id)
+            next_row_index = idx + rows_swept * len(all_ids)
+            next_row_y = next_row_index * spacing
+    
+            max_rows_possible = math.ceil(ArenaMaxY / spacing)
+            highest_id = max(all_ids, key=extract_int)
+    
+            # Case 1: Next row exceeds arena → Done
+            if next_row_index >= max_rows_possible:
+                print(f"{pi_puck_id} → next_row_index={next_row_index} exceeds arena limits.")
+                current_state = STATE_DONE
+                continue
+            
+            # Case 2: This robot is NOT highest ID and would be sweeping the last row → skip
+            if next_row_index == max_rows_possible - 1 and pi_puck_id != highest_id:
+                print(f"{pi_puck_id} skips final row {next_row_index} — reserved for highest ID.")
+                current_state = STATE_DONE
+                continue
+            
+            # Case 3: Valid row → proceed
+            target_y = next_row_y
+            current_state = STATE_ROW_ROTATE
 
         elif current_state == STATE_ROW_ROTATE:
             # Turn to new row position (Y changes, X remains)
@@ -349,6 +357,7 @@ try:
         elif current_state == STATE_ROW_DRIVE:
             print(f"{pi_puck_id} STATE_ROW_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             if drive_forward_stepwise(x, target_y):
+                rowY = target_y
                 sweep_direction *= -1
                 target_x = SweepEndX if sweep_direction == 1 else StartX
                 current_state = STATE_START_SWEEP
@@ -359,9 +368,6 @@ try:
             time.sleep(0.1)
             break
         
-             
-            
-
 except KeyboardInterrupt:
     print("Interrupt detected!!")
 finally:
