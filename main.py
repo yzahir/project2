@@ -168,7 +168,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     return False
     
 
-def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
+def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
     dx = tx - x
     dy = ty - y
     angle1 = math.degrees(math.atan2(dy, dx))
@@ -179,7 +179,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=3.0):
     if abs(diff) < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         return True
-    spd = max(min(0.05*diff, rotation_speed), 100)
+    spd = max(min(0.05*diff, rotation_speed), 10)
     if diff > 0:
         pipuck.epuck.set_motor_speeds(spd, -spd)
     else:
@@ -310,6 +310,7 @@ try:
                 print(f"{pi_puck_id} neighbors ready, start sweeping!")
                 current_state = STATE_SWEEP_DRIVE
                 ready = False  # Reset for next row
+                ready_counts.clear()  # Reset ready counts for next row
             else:
                 print(f"{pi_puck_id} waiting for neighbors... ready_counts={dict(ready_counts)}")
 
