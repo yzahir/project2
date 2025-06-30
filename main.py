@@ -179,7 +179,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
     if abs(diff) < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         return True
-    spd = max(min(0.05*diff, rotation_speed), 10)
+    spd = max(2*diff, 50)
     if diff > 0:
         pipuck.epuck.set_motor_speeds(spd, -spd)
     else:
