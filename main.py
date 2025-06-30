@@ -23,6 +23,7 @@ ready = False
 StartX     = 0.1
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
+ArenaMaxX  = 2.0
 
 forward_speed=500
 rotation_speed=300
@@ -146,12 +147,36 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
 
+def collsion_detected(x, y, radius = 0.0):
+    # Check for collision with other robots
+    for key, value in puck_dict.items():
+        if key != pi_puck_id:
+            other_x = value.get("x")
+            other_y = value.get("y")
+            if other_x is not None and other_y is not None:
+                distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
+                if distance_to_other < radius:
+                    # Calculate angle to other robot
+                    angle_to_other = math.degrees(math.atan2(other_y - y, other_x - x))
+                    # Convert to robot's coordinate system (y-axis reference)
+                    angle_to_other = (-angle_to_other + 90) % 360
+                    
+                    # Check if robot is pointing towards the other robot (within 45 degrees)
+                    angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
+                    if angle_diff < 45:  # Robot is pointing towards other robot
+                        return True, key
+    return False, None
+
 def drive_forward_stepwise(tx, ty, spd=forward_speed):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
         start_position = (x,y)
     d = distance(x,y,tx,ty)
+    if collsion_detected(x, y, radius=0.1)[0]:
+        print(f"[{pi_puck_id}] Collision detected! Stopping.")
+        pipuck.epuck.set_motor_speeds(0, 0)
+        return False
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     if d < 0.1:
         pipuck.epuck.set_motor_speeds(0, 0)
