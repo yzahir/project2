@@ -173,7 +173,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     if start_position is None:
         start_position = (x,y)
     d = distance(x,y,tx,ty)
-    if collsion_detected(x, y, radius=0.1)[0]:
+    if collsion_detected(x, y, radius=0.01)[0]:
         print(f"[{pi_puck_id}] Collision detected! Stopping.")
         pipuck.epuck.set_motor_speeds(0, 0)
         return False
