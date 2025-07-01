@@ -174,22 +174,40 @@ def collsion_detected(x, y, radius = 0.02):
     return False, None
 
 def drive_forward_stepwise(tx, ty, spd=forward_speed):
-    global start_position
-    x,y,_ = get_position()
+    global start_position, last_distance
+    x, y, _ = get_position()
+    
     if start_position is None:
-        start_position = (x,y)
-    d = distance(x,y,tx,ty)
+        start_position = (x, y)
+        last_distance = None
+    
+    d = distance(x, y, tx, ty)
+    
     if collsion_detected(x, y)[0]:
         print(f"[{pi_puck_id}] Collision detected! Stopping.")
         pipuck.epuck.set_motor_speeds(0, 0)
-        return False
+        return 0
+    
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
+    
+    # Stop if close enough to target
     if d < 0.1:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
-        return True
+        last_distance = None
+        return 1
+    
+    # Stop if we're moving away from target (overshot)
+    if last_distance is not None and d > last_distance + 0.02:
+        print(f"[{pi_puck_id}] Overshot detected! d={d:.3f}, last_d={last_distance:.3f}")
+        pipuck.epuck.set_motor_speeds(0, 0)
+        start_position = None
+        last_distance = None
+        return 2
+    
+    last_distance = d
     pipuck.epuck.set_motor_speeds(spd, spd)
-    return False
+    return 0
     
 
 def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
@@ -247,6 +265,7 @@ role          = "UNKNOWN"
 target_x      = None
 target_y      = None
 start_position = None
+last_distance = None
 
 # Row-sweeping globals
 rowY      = None
@@ -322,10 +341,13 @@ try:
 
         elif current_state == STATE_START_DRIVE:
             print(f"{pi_puck_id} STATE_START_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
-            if drive_forward_stepwise(target_x,target_y):
+            result = drive_forward_stepwise(target_x, target_y)
+            if result == 1:
                 print(f"{pi_puck_id} formed line.")
                 target_x = SweepEndX if sweep_direction == 1 else StartX         
                 current_state = STATE_START_SWEEP
+            elif result == 2:
+                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
 
         elif current_state == STATE_WAIT_FOR_NEIGHBORS_READY:
             # Wait for left and right neighbors to be ready
@@ -346,11 +368,14 @@ try:
 
         elif current_state == STATE_SWEEP_DRIVE:
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
-            if drive_forward_stepwise(target_x,target_y):
+            result = drive_forward_stepwise(target_x, target_y)
+            if result == 1:
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
                 rows_swept += 1
                 current_state = STATE_ADVANCE_ROW
+            elif result == 2:
+                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
 
 
         elif current_state == STATE_ADVANCE_ROW:
@@ -389,11 +414,14 @@ try:
 
         elif current_state == STATE_ROW_DRIVE:
             print(f"{pi_puck_id} STATE_ROW_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
-            if drive_forward_stepwise(x, target_y):
+            result = drive_forward_stepwise(x, target_y)
+            if result == 1:
                 rowY = target_y
                 sweep_direction *= -1
                 target_x = SweepEndX if sweep_direction == 1 else StartX
                 current_state = STATE_START_SWEEP
+            if result == 2:
+                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
 
         elif current_state == STATE_DONE:
             pipuck.epuck.set_motor_speeds(0, 0)
