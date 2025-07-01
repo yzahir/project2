@@ -191,14 +191,14 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     
     # Stop if close enough to target
-    if d < 0.1:
+    if d < 0.05:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         last_distance = None
         return 1
     
     # Stop if we're moving away from target (overshot)
-    if last_distance is not None and d > last_distance + 0.02:
+    if last_distance is not None and d > last_distance + 0.01:
         print(f"[{pi_puck_id}] Overshot detected! d={d:.3f}, last_d={last_distance:.3f}")
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
