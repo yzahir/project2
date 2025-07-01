@@ -19,7 +19,7 @@ angle = 0.0
 is_leader = False
 target_x = 0.1
 target_y = 0.1
-ready = False
+target_id = "40" 
 
 # Arena parameters
 StartX     = 0.1
@@ -173,7 +173,7 @@ def collsion_detected(x, y, radius = 0.02):
                         return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed):
+def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.05):
     global start_position, last_distance
     x, y, _ = get_position()
     
@@ -191,7 +191,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     
     # Stop if close enough to target
-    if d < 0.05:
+    if d < tresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         last_distance = None
@@ -238,7 +238,18 @@ def neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=1):
    left_ready = (left_id is None or ready_counts[left_id] >= min_ready_count)
    right_ready = (right_id is None or ready_counts[right_id] >= min_ready_count)
    return left_ready, right_ready
-   
+
+def target_in_range(self_x, self_y, target_puck = target_id):
+    target_data = puck_dict.get(target_puck)
+    
+    if target_data:
+        target_puck_x = target_data.get("x")
+        target_puck_y = target_data.get("y")
+        
+        if target_x is not None and target_y is not None:
+            dist = distance(self_x, self_y, target_puck_x, target_puck_y)
+            return dist <= max_range, target_puck_x, target_puck_y
+    return False, None, None
 
 def input_thread():
     global user_command
@@ -258,6 +269,7 @@ STATE_ROW_ROTATE    = 8
 STATE_ROW_DRIVE     = 9
 STATE_DONE          = 10
 STATE_WAIT_FOR_NEIGHBORS_READY  = 11
+STATE_TARGET_FOUND = 12
 
 
 current_state = STATE_START
@@ -282,6 +294,9 @@ try:
         print(f'puck_dict: {puck_dict}')
         # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
+        is_found, target_puck_x, target_puck_y = target_in_range(x, y)
+        if is_found:
+            current_state = STATE_TARGET_FOUND
         if x is not None and y is not None:
             publish_data({
                 pi_puck_id: {
@@ -293,7 +308,9 @@ try:
                         "humidity": random.randint(0,100),
                         "light": random.randint(0,100)
                     },
-                    "target_found": False,
+                    "target_found": is_found,
+                    "target_x": target_puck_x,
+                    "target_y": target_y,
                     "ready": ready
                 }
             })
@@ -422,6 +439,12 @@ try:
                 current_state = STATE_START_SWEEP
             if result == 2:
                 rotate_to_target_stepwise(x, y, angle, target_x, target_y)
+                
+        elif current_state == STATE_TARGET_FOUND:
+            print(f"{pi_puck_id} STATE_TARGET_FOUND at ({target_puck_x:.2f}, {target_puck_y:.2f})")
+            if rotate_to_target_stepwise(x, y, angle, target_puck_x, target_puck_y):
+                if drive_forward_stepwise(target_puck_x, target_puck_y, tresh=0.15) == 1:
+                    current_state = STATE_DONE
 
         elif current_state == STATE_DONE:
             pipuck.epuck.set_motor_speeds(0, 0)
