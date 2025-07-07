@@ -19,7 +19,8 @@ angle = 0.0
 is_leader = False
 target_x = 0.1
 target_y = 0.1
-target_id = "40" 
+ready = False
+target_id = "44" 
 
 # Arena parameters
 StartX     = 0.1
