@@ -446,6 +446,7 @@ try:
         elif current_state == STATE_TARGET_FOUND:
             print(f"{pi_puck_id} STATE_TARGET_FOUND at ({target_puck_x:.2f}, {target_puck_y:.2f})")
             if rotate_to_target_stepwise(x, y, angle, target_puck_x, target_puck_y):
+                print("True target found, driving towards it.")
                 current_state = STATE_TARGRET_FOUND_DRIVE
         
         elif current_state == STATE_TARGRET_FOUND_DRIVE:
