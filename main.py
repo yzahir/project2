@@ -298,7 +298,7 @@ try:
         # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
         is_found, target_puck_x, target_puck_y = target_in_range(x, y)
-        if is_found:
+        if is_found and current_state != STATE_TARGET_FOUND and current_state != STATE_TARGRET_FOUND_DRIVE:
             current_state = STATE_TARGET_FOUND
         if x is not None and y is not None:
             publish_data({
@@ -450,7 +450,7 @@ try:
                 current_state = STATE_TARGRET_FOUND_DRIVE
         
         elif current_state == STATE_TARGRET_FOUND_DRIVE:
-            if drive_forward_stepwise(target_puck_x, target_puck_y, tresh=0.15) == 1:
+            if drive_forward_stepwise(target_puck_x, target_puck_y) == 1:
                 current_state = STATE_DONE
 
         elif current_state == STATE_DONE:
