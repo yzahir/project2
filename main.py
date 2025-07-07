@@ -272,6 +272,7 @@ STATE_ROW_DRIVE     = 9
 STATE_DONE          = 10
 STATE_WAIT_FOR_NEIGHBORS_READY  = 11
 STATE_TARGET_FOUND = 12
+STATE_TARGRET_FOUND_DRIVE = 13
 
 
 current_state = STATE_START
@@ -445,8 +446,11 @@ try:
         elif current_state == STATE_TARGET_FOUND:
             print(f"{pi_puck_id} STATE_TARGET_FOUND at ({target_puck_x:.2f}, {target_puck_y:.2f})")
             if rotate_to_target_stepwise(x, y, angle, target_puck_x, target_puck_y):
-                if drive_forward_stepwise(target_puck_x, target_puck_y, tresh=0.15) == 1:
-                    current_state = STATE_DONE
+                current_state = STATE_TARGRET_FOUND_DRIVE
+        
+        elif current_state == STATE_TARGRET_FOUND_DRIVE:
+            if drive_forward_stepwise(target_puck_x, target_puck_y, tresh=0.15) == 1:
+                current_state = STATE_DONE
 
         elif current_state == STATE_DONE:
             pipuck.epuck.set_motor_speeds(0, 0)
