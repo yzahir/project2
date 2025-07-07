@@ -298,7 +298,7 @@ try:
         # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
         is_found, target_puck_x, target_puck_y = target_in_range(x, y)
-        if is_found and current_state != STATE_TARGET_FOUND and current_state != STATE_TARGRET_FOUND_DRIVE:
+        if is_found and current_state != STATE_TARGET_FOUND and current_state != STATE_TARGRET_FOUND_DRIVE and current_state != STATE_DONE:
             current_state = STATE_TARGET_FOUND
         if x is not None and y is not None:
             publish_data({
@@ -453,7 +453,7 @@ try:
             if drive_forward_stepwise(target_puck_x, target_puck_y) == 1:
                 current_state = STATE_DONE
 
-        if current_state == STATE_DONE:
+        elif current_state == STATE_DONE:
             pipuck.epuck.set_motor_speeds(0, 0)
             print(f"{pi_puck_id} DONE sweeping.")
             time.sleep(0.1)
