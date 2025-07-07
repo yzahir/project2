@@ -187,7 +187,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.01):
     if collsion_detected(x, y)[0]:
         print(f"[{pi_puck_id}] Collision detected! Stopping.")
         pipuck.epuck.set_motor_speeds(0, 0)
-        return 0
+        return False
     
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     
@@ -196,19 +196,19 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.01):
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         last_distance = None
-        return 1
+        return True
     
     # Stop if we're moving away from target (overshot)
     if last_distance is not None and d > last_distance + 0.01:
         print(f"[{pi_puck_id}] Overshot detected! d={d:.3f}, last_d={last_distance:.3f}")
-        pipuck.epuck.set_motor_speeds(0, 0)
+        while not rotate_to_target_stepwise(x, y, angle, tx, ty):
+            time.sleep(0.1)
         start_position = None
         last_distance = None
-        return 2
     
     last_distance = d
     pipuck.epuck.set_motor_speeds(spd, spd)
-    return 0
+    return False
     
 
 def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
@@ -362,12 +362,10 @@ try:
         elif current_state == STATE_START_DRIVE:
             print(f"{pi_puck_id} STATE_START_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             result = drive_forward_stepwise(target_x, target_y)
-            if result == 1:
+            if result:
                 print(f"{pi_puck_id} formed line.")
                 target_x = SweepEndX if sweep_direction == 1 else StartX         
                 current_state = STATE_START_SWEEP
-            elif result == 2:
-                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
 
         elif current_state == STATE_WAIT_FOR_NEIGHBORS_READY:
             # Wait for left and right neighbors to be ready
@@ -389,13 +387,11 @@ try:
         elif current_state == STATE_SWEEP_DRIVE:
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             result = drive_forward_stepwise(target_x, target_y)
-            if result == 1:
+            if result:
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
                 rows_swept += 1
                 current_state = STATE_ADVANCE_ROW
-            elif result == 2:
-                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
 
 
         elif current_state == STATE_ADVANCE_ROW:
@@ -435,13 +431,11 @@ try:
         elif current_state == STATE_ROW_DRIVE:
             print(f"{pi_puck_id} STATE_ROW_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             result = drive_forward_stepwise(x, target_y)
-            if result == 1:
+            if result:
                 rowY = target_y
                 sweep_direction *= -1
                 target_x = SweepEndX if sweep_direction == 1 else StartX
                 current_state = STATE_START_SWEEP
-            if result == 2:
-                rotate_to_target_stepwise(x, y, angle, target_x, target_y)
                 
         elif current_state == STATE_TARGET_FOUND:
             print(f"{pi_puck_id} STATE_TARGET_FOUND at ({target_puck_x:.2f}, {target_puck_y:.2f})")
@@ -450,7 +444,7 @@ try:
                 current_state = STATE_TARGRET_FOUND_DRIVE
         
         elif current_state == STATE_TARGRET_FOUND_DRIVE:
-            if drive_forward_stepwise(target_puck_x, target_puck_y) == 1:
+            if drive_forward_stepwise(target_puck_x, target_puck_y):
                 current_state = STATE_DONE
 
         elif current_state == STATE_DONE:
