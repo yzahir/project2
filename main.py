@@ -453,7 +453,7 @@ try:
             if drive_forward_stepwise(target_puck_x, target_puck_y) == 1:
                 current_state = STATE_DONE
 
-        elif current_state == STATE_DONE:
+        if current_state == STATE_DONE:
             pipuck.epuck.set_motor_speeds(0, 0)
             print(f"{pi_puck_id} DONE sweeping.")
             time.sleep(0.1)
