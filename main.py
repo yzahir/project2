@@ -176,7 +176,7 @@ def collsion_detected(x, y, radius = 0.15):
 
                         # Check if robot is pointing towards the other robot (within 45 degrees)
                         angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
-                        if angle_diff < 45:  # Robot is pointing towards other robot
+                        if angle_diff < 30:  # Robot is pointing towards other robot
                             return True, key
     return False, None
 
