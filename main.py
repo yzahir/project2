@@ -174,13 +174,12 @@ def collsion_detected(x, y, radius = 0.02):
                         return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.01):
-    global start_position, last_distance
+def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.05):
+    global start_position
     x, y, _ = get_position()
     
     if start_position is None:
         start_position = (x, y)
-        last_distance = None
     
     d = distance(x, y, tx, ty)
     
@@ -198,20 +197,12 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.01):
         last_distance = None
         return True
     
-    # Stop if we're moving away from target (overshot)
-    if last_distance is not None and d > last_distance + 0.01:
-        print(f"[{pi_puck_id}] Overshot detected! d={d:.3f}, last_d={last_distance:.3f}")
-        while not rotate_to_target_stepwise(x, y, angle, tx, ty):
-            time.sleep(0.1)
-        start_position = None
-        last_distance = None
     
-    last_distance = d
     pipuck.epuck.set_motor_speeds(spd, spd)
     return False
     
 
-def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
+def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.5):
     dx = tx - x
     dy = ty - y
     angle1 = math.degrees(math.atan2(dy, dx))
@@ -280,7 +271,6 @@ role          = "UNKNOWN"
 target_x      = None
 target_y      = None
 start_position = None
-last_distance = None
 
 # Row-sweeping globals
 rowY      = None
