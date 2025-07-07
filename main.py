@@ -295,7 +295,7 @@ start_waiting = 50
 threading.Thread(target=input_thread, daemon=True).start()
 
 try:
-    for _ in range(1000):
+    for _ in range(10000):
         # TODO: Do your stuff here
         time.sleep(0.1)
         # print(f'puck_dict: {puck_dict}')
