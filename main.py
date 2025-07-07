@@ -159,11 +159,14 @@ def collsion_detected(x, y, radius = 0.05):
     for key, value in puck_pos_dict.items():
         if key != pi_puck_id:
             pos = value.get('position')
+            print(f"[{pi_puck_id}] Checking collision with robot {key}")
             if pos:
                 other_x = pos[0]
                 other_y = pos[1]
+                print(f"[{pi_puck_id}] Checking collision with robot {key} at position ({other_x}, {other_y})")
                 if other_x is not None and other_y is not None:
                     distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
+                    print(f"[{pi_puck_id}] Checking collision with robot {key} at distance {distance_to_other:.2f}")
                     if distance_to_other < radius:
                         print(f"[{pi_puck_id}] Collision detected with robot {key} at distance {distance_to_other:.2f}")
                         # Calculate angle to other robot
@@ -287,7 +290,7 @@ try:
     for _ in range(1000):
         # TODO: Do your stuff here
         time.sleep(0.1)
-        print(f'puck_dict: {puck_dict}')
+        # print(f'puck_dict: {puck_dict}')
         # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
         is_found, target_puck_x, target_puck_y = target_in_range(x, y)
