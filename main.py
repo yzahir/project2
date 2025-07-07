@@ -154,24 +154,27 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
 
-def collsion_detected(x, y, radius = 0.02):
+def collsion_detected(x, y, radius = 0.05):
     # Check for collision with other robots
-    for key, value in puck_dict.items():
+    for key, value in puck_pos_dict.items():
         if key != pi_puck_id:
-            other_x = value.get("x")
-            other_y = value.get("y")
-            if other_x is not None and other_y is not None:
-                distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
-                if distance_to_other < radius:
-                    # Calculate angle to other robot
-                    angle_to_other = math.degrees(math.atan2(other_y - y, other_x - x))
-                    # Convert to robot's coordinate system (y-axis reference)
-                    angle_to_other = (-angle_to_other + 90) % 360
-                    
-                    # Check if robot is pointing towards the other robot (within 45 degrees)
-                    angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
-                    if angle_diff < 45:  # Robot is pointing towards other robot
-                        return True, key
+            pos = value.get('position')
+            if pos:
+                other_x = pos[0]
+                other_y = pos[1]
+                if other_x is not None and other_y is not None:
+                    distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
+                    if distance_to_other < radius:
+                        print(f"[{pi_puck_id}] Collision detected with robot {key} at distance {distance_to_other:.2f}")
+                        # Calculate angle to other robot
+                        angle_to_other = math.degrees(math.atan2(other_y - y, other_x - x))
+                        # Convert to robot's coordinate system (y-axis reference)
+                        angle_to_other = (-angle_to_other + 90) % 360
+
+                        # Check if robot is pointing towards the other robot (within 45 degrees)
+                        angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
+                        if angle_diff < 45:  # Robot is pointing towards other robot
+                            return True, key
     return False, None
 
 def drive_forward_stepwise(tx, ty, spd=forward_speed, tresh=0.05):
