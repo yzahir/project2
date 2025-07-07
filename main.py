@@ -325,7 +325,7 @@ try:
 
         elif current_state == STATE_WAIT_FOR_NEIGHBORS:
             print(f"Waiting for neighbors... {len(puck_dict)} found.")
-            if len(all_ids) < 2:
+            if len(all_ids) < 3:
                 current_state = STATE_START
                 continue
             else:
