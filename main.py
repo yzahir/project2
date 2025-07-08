@@ -157,7 +157,7 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
 
-def collsion_detected(x, y, radius = 0.15):
+def collsion_detected(x, y, radius = 0.1):
     # Check for collision with other robots
     for key, value in puck_pos_dict.items():
         if key != pi_puck_id:
