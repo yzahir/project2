@@ -24,6 +24,7 @@ is_leader = False
 target_x = 0.1
 target_y = 0.1
 ready = False
+target_id = '44'
 
 # Arena parameters
 StartX     = 0.1
@@ -242,6 +243,19 @@ def get_oredered_ids_by_startX(puck_dict, pi_puck_id, x, y, StartX):
      all_robots[pi_puck_id] = {"x":x, "y":y}
      
      return sorted(all_robots.keys(), key=lambda rid: abs(all_robots[rid]["x"] - StartX))
+ 
+def target_in_range(self_x, self_y, target_puck = target_id):
+    target_data = puck_pos_dict.get(target_puck)
+    
+    if target_data:
+        pos = target_data.get('position')
+        target_puck_x = pos[0] if pos else None
+        target_puck_y = pos[1] if pos else None
+        
+        if target_x is not None and target_y is not None:
+            dist = distance(self_x, self_y, target_puck_x, target_puck_y)
+            return dist <= max_range, target_puck_x, target_puck_y
+    return False, None, None
      
 # States
 STATE_START         = 0
