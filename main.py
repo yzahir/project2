@@ -157,14 +157,44 @@ def rotate_to_target():
             pipuck.epuck.set_motor_speeds(-turn_speed, turn_speed)
         return STATE_START_ROTATE
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed):
+def collsion_detected(x, y, radius = 0.15):
+    # Check for collision with other robots
+    for key, value in puck_pos_dict.items():
+        if key != pi_puck_id:
+            pos = value.get('position')
+            if pos:
+                other_x = pos[0]
+                other_y = pos[1]
+                if other_x is not None and other_y is not None:
+                    distance_to_other = ((x - other_x) ** 2 + (y - other_y) ** 2) ** 0.5
+                    if distance_to_other < radius:
+                        print(f"[{pi_puck_id}] Collision detected with robot {key} at distance {distance_to_other:.2f}")
+                        # Calculate angle to other robot
+                        angle_to_other = math.degrees(math.atan2(other_y - y, other_x - x))
+                        # Convert to robot's coordinate system (y-axis reference)
+                        angle_to_other = (-angle_to_other + 90) % 360
+
+                        # Check if robot is pointing towards the other robot (within 45 degrees)
+                        angle_diff = abs((angle_to_other - angle + 180) % 360 - 180)
+                        if angle_diff < 45:  # Robot is pointing towards other robot
+                            print(f"[{pi_puck_id}] Robot {key} is pointing towards me at angle {angle_to_other:.1f}° (diff={angle_diff:.1f}°)") 
+                            return True, key
+    return False, None
+
+def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
         start_position = (x,y)
     d = distance(x,y,tx,ty)
+    
+    if collsion_detected(x, y)[0]:
+        print(f"[{pi_puck_id}] Collision detected! Stopping.")
+        pipuck.epuck.set_motor_speeds(0, 0)
+        return False
+    
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
-    if d < 0.2:
+    if d < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         return True
@@ -172,7 +202,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed):
     return False
     
 
-def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
+def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.5):
     dx = tx - x
     dy = ty - y
     angle1 = math.degrees(math.atan2(dy, dx))
@@ -183,7 +213,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=1.0):
     if abs(diff) < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         return True
-    spd = max(5*abs(diff), 50)
+    spd = max(5*abs(diff), 30)
     if diff > 0:
         pipuck.epuck.set_motor_speeds(spd, -spd)
     else:
