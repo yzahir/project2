@@ -401,8 +401,8 @@ try:
                       target_found_by_any = True
                       break
                    
-            if ir0_value > 200 or target_found_by_any:
-               print(f"{pi_puck_id}: Object detected by IR! Value={ir0_value}")
+            if target_in_range(x, y, target_id)[0] or target_found_by_any:
+               print(f"{pi_puck_id}: Target in Range!")
                publish_data({
                    pi_puck_id: {
                        "x": x,
