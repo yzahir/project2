@@ -209,12 +209,16 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.
             else:
                 x_diff = other_x - x  # Default behavior if angle is unknown
                 
-            speed_adjustment = min(abs(x_diff) * 1000, 1000 - spd)  # Scale factor for speed adjustment
+            # Non-linear speed adjustment using tanh function
+            # tanh(x) rises quickly but levels off, perfect for convergence
+            k = 10  # Steepness factor - higher means faster initial response
+            max_adjustment = 300  # Maximum speed adjustment
+            speed_adjustment = max_adjustment * math.tanh(k * abs(x_diff))
             
-            if x_diff > 0.05:  # Other robot is ahead - speed up
+            if x_diff > 0.02:  # Other robot is ahead - speed up (reduced threshold)
                 adjusted_spd = min(spd + speed_adjustment, 1000)  # Don't exceed max speed of 1000
                 print(f"[{pi_puck_id}] Robot {other_robot_id} ahead by {x_diff:.2f}m, speeding up to {adjusted_spd}")
-            elif x_diff < -0.05:  # Other robot is behind - slow down
+            elif x_diff < -0.02:  # Other robot is behind - slow down (reduced threshold)
                 adjusted_spd = max(spd - speed_adjustment, spd * 0.5)  # Don't go below 50% speed
                 print(f"[{pi_puck_id}] Robot {other_robot_id} behind by {abs(x_diff):.2f}m, slowing down to {adjusted_spd}")
     
