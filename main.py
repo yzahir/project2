@@ -31,7 +31,7 @@ StartX     = 0.1
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
 
-forward_speed=500
+forward_speed=300
 rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
 axle_radius_cm = 2.65       # 53 mm between wheels → r = 2.65 cm
@@ -209,7 +209,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.
             else:
                 x_diff = other_x - x  # Default behavior if angle is unknown
                 
-            speed_adjustment = min(abs(x_diff) * 200, 200)  # Scale factor for speed adjustment
+            speed_adjustment = min(abs(x_diff) * 1000, 1000 - spd)  # Scale factor for speed adjustment
             
             if x_diff > 0.05:  # Other robot is ahead - speed up
                 adjusted_spd = min(spd + speed_adjustment, 1000)  # Don't exceed max speed of 1000
