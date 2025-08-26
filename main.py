@@ -194,9 +194,9 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1, correction=Fal
     
     if (correction):
         if (y < ty):
-            speedleft  = spd * (1 - 0.5 * (ty - y) / (ty - start_position[1] + 0.01))
+            speedright  = min(1000, spd * (1 - 0.5 * (ty - y) / (ty - start_position[1] + 0.01)))
         else:
-            speedright = spd * (1 - 0.5 * (y - ty) / (start_position[1] - ty + 0.01))
+            speedleft = min(1000, spd * (1 - 0.5 * (y - ty) / (start_position[1] - ty + 0.01)))
     
     # if collsion_detected(x, y)[0]:
     #     print(f"[{pi_puck_id}] Collision detected! Stopping.")
