@@ -182,7 +182,7 @@ def collsion_detected(x, y, radius = 0.1):
                             return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
+def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.12):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
