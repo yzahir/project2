@@ -189,6 +189,10 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
         start_position = (x,y)
     d = distance(x,y,tx,ty)
     
+    if collsion_detected(x, y)[0]:
+        print(f"[{pi_puck_id}] Collision detected! Stopping.")
+        pipuck.epuck.set_motor_speeds(0, 0)
+        return False
     
     print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f}")
     if d < thresh:
