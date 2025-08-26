@@ -287,7 +287,7 @@ start_waiting = 50
 
 #epuck2.enable_ir_sensors(True)
 try:
-    for _ in range(10000):
+    for _ in range(100000):
         # TODO: Do your stuff here     
         time.sleep(0.1)
         # print(f'puck_dict: {puck_dict}')
