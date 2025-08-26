@@ -203,9 +203,9 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.
             # Adjust x_diff based on robot's direction (0-180 vs 180-360)
             if angle is not None:
                 if 0 <= angle < 180:  # Robot pointing in positive direction
-                    x_diff = x - other_x  # Positive if other robot is ahead
+                    x_diff = other_x - x  # Positive if other robot is ahead
                 else:  # Robot pointing in negative direction (180-360)
-                    x_diff = other_x - x  # Positive if other robot is ahead in this direction
+                    x_diff = x - other_x # Positive if other robot is ahead in this direction
             else:
                 x_diff = other_x - x  # Default behavior if angle is unknown
                 
