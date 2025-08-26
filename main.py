@@ -423,6 +423,8 @@ try:
                current_state = STATE_WAIT_FOR_NEIGHBORS_READY
 
         elif current_state == STATE_SWEEP_DRIVE:
+            if pi_puck_id == '32':
+                time.sleep(1)  # Delay for testing staggered movement
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             # print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
 
