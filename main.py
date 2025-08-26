@@ -191,17 +191,36 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.
     dx = abs(x - tx)
     dy = abs(y - ty)
     
+    # Adjust speed based on other robots' X positions
+    adjusted_spd = spd
+    if puck_dict:
+        # Find a robot from puck_dict to compare with
+        other_robot_id = next(iter(puck_dict.keys()))
+        other_robot = puck_dict[other_robot_id]
+        other_x = other_robot.get("x")
+        
+        if other_x is not None:
+            x_diff = other_x - x  # Positive if other robot is ahead, negative if behind
+            speed_adjustment = min(abs(x_diff) * 200, 200)  # Scale factor for speed adjustment
+            
+            if x_diff > 0.05:  # Other robot is ahead - speed up
+                adjusted_spd = min(spd + speed_adjustment, 1000)  # Don't exceed max speed of 1000
+                print(f"[{pi_puck_id}] Robot {other_robot_id} ahead by {x_diff:.2f}m, speeding up to {adjusted_spd}")
+            elif x_diff < -0.05:  # Other robot is behind - slow down
+                adjusted_spd = max(spd - speed_adjustment, spd * 0.5)  # Don't go below 50% speed
+                print(f"[{pi_puck_id}] Robot {other_robot_id} behind by {abs(x_diff):.2f}m, slowing down to {adjusted_spd}")
+    
     # if collsion_detected(x, y)[0]:
     #     print(f"[{pi_puck_id}] Collision detected! Stopping.")
     #     pipuck.epuck.set_motor_speeds(0, 0)
     #     return False
     
-    print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f} dx={dx:.3f} dy={dy:.3f}")
+    print(f"[{pi_puck_id}] Driving→ ({x:.2f},{y:.2f})→({tx:.2f},{ty:.2f}) d={d:.3f} dx={dx:.3f} dy={dy:.3f} spd={adjusted_spd}")
     if dx < thresh_x and dy < thresh_y:
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         return True
-    pipuck.epuck.set_motor_speeds(spd, spd)
+    pipuck.epuck.set_motor_speeds(adjusted_spd, adjusted_spd)
     return False
     
 
