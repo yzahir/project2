@@ -485,7 +485,7 @@ try:
             #    current_state = STATE_DONE
             #    pipuck.epuck.set_motor_speeds(0, 0)
             #    break               
-            if drive_forward_stepwise(target_x,target_y, speed_adjustment=True):
+            if drive_forward_stepwise(target_x,target_y):
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
                 rows_swept += 1
