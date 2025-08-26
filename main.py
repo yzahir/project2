@@ -189,6 +189,14 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
         start_position = (x,y)
     d = distance(x,y,tx,ty)
     
+    speedleft = spd
+    speedright= spd
+    
+    if (y < ty):
+        speedleft  = spd * (1 - 0.5 * (ty - y) / (ty - start_position[1] + 0.01))
+    else:
+        speedright = spd * (1 - 0.5 * (y - ty) / (start_position[1] - ty + 0.01))
+    
     # if collsion_detected(x, y)[0]:
     #     print(f"[{pi_puck_id}] Collision detected! Stopping.")
     #     pipuck.epuck.set_motor_speeds(0, 0)
@@ -199,7 +207,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
         pipuck.epuck.set_motor_speeds(0, 0)
         start_position = None
         return True
-    pipuck.epuck.set_motor_speeds(spd, spd)
+    pipuck.epuck.set_motor_speeds(int(speedleft), int(speedright))
     return False
     
 
@@ -355,7 +363,7 @@ try:
                 if my_order == 0:
                   current_state = STATE_START_DRIVE
                 else:
-                     wait_steps = my_order * 100
+                     wait_steps = my_order * 10
                      wait_counter = 0
                      current_state = STATE_WAIT_FOR_LINE_ORDER
                      
