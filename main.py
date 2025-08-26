@@ -413,6 +413,8 @@ try:
                 current_state = STATE_SWEEP_DRIVE
                 ready = False  # Reset for next row
                 ready_counts.clear()  # Reset ready counts for next row
+                if pi_puck_id == '32':
+                    time.sleep(5)  # Delay for testing staggered movement
             else:
                 print(f"{pi_puck_id} waiting for neighbors... ready_counts={dict(ready_counts)}")
 
@@ -423,8 +425,6 @@ try:
                current_state = STATE_WAIT_FOR_NEIGHBORS_READY
 
         elif current_state == STATE_SWEEP_DRIVE:
-            if pi_puck_id == '32':
-                time.sleep(5)  # Delay for testing staggered movement
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             # print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
 
