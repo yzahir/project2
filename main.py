@@ -399,7 +399,7 @@ try:
                 continue
             else:
                 if spacing is None and len(all_ids) >= 1:
-                    spacing = min(max_range*0.9)
+                    spacing = max_range*0.9
                     rowY    = 0.2
                     total_sweeps = math.ceil(ArenaMaxY / spacing)
                     sweeps_per_rbt = math.ceil(total_sweeps / len(all_ids))
