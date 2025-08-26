@@ -387,7 +387,7 @@ try:
 
         elif current_state == STATE_START_SWEEP:
            print(f"{pi_puck_id} STATE_START_SWEEP at Y={target_y:.2f}, direction={sweep_direction}")
-           if rotate_to_target_stepwise(x,y,angle,target_x,target_y):
+           if rotate_to_target_stepwise(x,y,angle,target_x,target_y, thresh=0.5):
                ready = True  
                current_state = STATE_WAIT_FOR_NEIGHBORS_READY
 
