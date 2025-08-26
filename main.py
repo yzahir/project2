@@ -424,7 +424,7 @@ try:
 
         elif current_state == STATE_SWEEP_DRIVE:
             if pi_puck_id == '32':
-                time.sleep(1)  # Delay for testing staggered movement
+                time.sleep(5)  # Delay for testing staggered movement
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
             # print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
 
