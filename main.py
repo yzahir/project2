@@ -79,9 +79,25 @@ def on_message(client, userdata, msg):
                 msg_x = robot_data.get("x")
                 msg_y = robot_data.get("y")
 
-                dist = distance(x_self, y_self, msg_x, msg_y)
-                if dist <= max_range:
+                # Check if robot is in direct range of us
+                dist_to_self = distance(x_self, y_self, msg_x, msg_y)
+                in_range = dist_to_self <= max_range
+                
+                # If not in direct range, check if it's in range of any robot we already know
+                if not in_range:
+                    for known_robot_id, known_robot_data in puck_dict.items():
+                        known_x = known_robot_data.get("x")
+                        known_y = known_robot_data.get("y")
+                        if known_x is not None and known_y is not None:
+                            dist_to_known = distance(known_x, known_y, msg_x, msg_y)
+                            if dist_to_known <= max_range:
+                                in_range = True
+                                print(f"[{pi_puck_id}] Robot {robot_id} connected via {known_robot_id} (dist={dist_to_known:.2f})")
+                                break
+                
+                if in_range:
                     puck_dict[robot_id] = robot_data
+                    
                 if robot_data.get("ready", False):
                     ready_counts[robot_id] += 1
 
@@ -255,6 +271,25 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.2):
     #pipuck.epuck.set_motor_speeds(spd if diff>0 else -spd,-spd if diff>0 else spd)
     return False
 
+def all_line_ready_confirmed(all_ids, pi_puck_id, min_ready_count=2):
+    """
+    Check if the entire line is ready by ensuring we've received enough 
+    ready signals from ALL robots in the line, not just neighbors.
+    """
+    # Count how many robots in the line have sent ready signals
+    total_ready_robots = sum(1 for robot_id in all_ids if ready_counts[robot_id] >= min_ready_count)
+    
+    # Everyone is ready if we've heard from all robots in the line
+    all_ready = total_ready_robots >= len(all_ids)
+    
+    if all_ready:
+        print(f"[{pi_puck_id}] ALL {len(all_ids)} robots ready! Starting sweep.")
+    else:
+        missing_count = len(all_ids) - total_ready_robots
+        print(f"[{pi_puck_id}] Waiting for {missing_count} more robots... ready_counts={dict(ready_counts)}")
+    
+    return all_ready
+
 def neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=1):
    idx = all_ids.index(pi_puck_id)
    left_id = all_ids[idx - 1] if idx > 0 else None
@@ -406,17 +441,14 @@ try:
                 current_state = STATE_START_SWEEP
 
         elif current_state == STATE_WAIT_FOR_NEIGHBORS_READY:
-            # Wait for left and right neighbors to be ready
-            left_ready, right_ready = neighbors_ready_confirmed(all_ids, pi_puck_id, min_ready_count=1)
-            if left_ready and right_ready:
-                print(f"{pi_puck_id} neighbors ready, start sweeping!")
+            # Wait for ALL robots in the line to be ready, not just neighbors
+            if all_line_ready_confirmed(all_ids, pi_puck_id, min_ready_count=2):
+                print(f"{pi_puck_id} ENTIRE LINE ready, start sweeping!")
                 current_state = STATE_SWEEP_DRIVE
                 ready = False  # Reset for next row
                 ready_counts.clear()  # Reset ready counts for next row
                 if pi_puck_id == '32':
                     time.sleep(5)  # Delay for testing staggered movement
-            else:
-                print(f"{pi_puck_id} waiting for neighbors... ready_counts={dict(ready_counts)}")
 
         elif current_state == STATE_START_SWEEP:
            print(f"{pi_puck_id} STATE_START_SWEEP at Y={target_y:.2f}, direction={sweep_direction}")
