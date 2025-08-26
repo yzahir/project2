@@ -447,8 +447,8 @@ try:
                 current_state = STATE_SWEEP_DRIVE
                 ready = False  # Reset for next row
                 ready_counts.clear()  # Reset ready counts for next row
-                if pi_puck_id == '32':
-                    time.sleep(5)  # Delay for testing staggered movement
+                # if pi_puck_id == '32':
+                #     time.sleep(5)  # Delay for testing staggered movement
 
         elif current_state == STATE_START_SWEEP:
            print(f"{pi_puck_id} STATE_START_SWEEP at Y={target_y:.2f}, direction={sweep_direction}")
