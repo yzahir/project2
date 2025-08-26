@@ -31,7 +31,7 @@ StartX     = 0.1
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
 
-forward_speed=300
+forward_speed=500
 rotation_speed=300
 wheel_step_to_cm = 0.01288  # 1 step ≈ 0.01288 cm
 axle_radius_cm = 2.65       # 53 mm between wheels → r = 2.65 cm
