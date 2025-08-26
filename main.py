@@ -199,7 +199,7 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.2):
     return False
     
 
-def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.5):
+def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.2):
     dx = tx - x
     dy = ty - y
     angle1 = math.degrees(math.atan2(dy, dx))
