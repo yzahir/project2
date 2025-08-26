@@ -284,9 +284,7 @@ start_waiting = 50
 #epuck2.enable_ir_sensors(True)
 try:
     for _ in range(10000):
-        # TODO: Do your stuff here
-        ir0_value = list(pipuck.epuck.ir_reflected)[0]
-        print("Reflected:", ir0_value)       
+        # TODO: Do your stuff here     
         time.sleep(0.1)
         print(f'puck_dict: {puck_dict}')
         # print(f'target_x: {target_x}, target_y: {target_y}')
