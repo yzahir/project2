@@ -27,7 +27,7 @@ ready = False
 target_id = '44'
 
 # Arena parameters
-StartX     = 0.2
+StartX     = 0.1
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
 
@@ -400,7 +400,7 @@ try:
             else:
                 if spacing is None and len(all_ids) >= 1:
                     spacing = min(max_range*0.9, ArenaMaxY/len(all_ids))
-                    rowY    = 0.1
+                    rowY    = 0.2
                     total_sweeps = math.ceil(ArenaMaxY / spacing)
                     sweeps_per_rbt = math.ceil(total_sweeps / len(all_ids))
                     print(f"total_sweeps: {total_sweeps}, sweeps_per_rbt: {sweeps_per_rbt}, spacing: {spacing}")
