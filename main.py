@@ -182,9 +182,9 @@ def collsion_detected(x, y, radius = 0.1):
                             return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.20):
+def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.20, speed_adjustment=False):
     global start_position
-    x,y,_ = get_position()
+    x,y,angle = get_position()
     if start_position is None:
         start_position = (x,y)
     d = distance(x,y,tx,ty)
@@ -193,14 +193,22 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh_x=0.08, thresh_y=0.
     
     # Adjust speed based on other robots' X positions
     adjusted_spd = spd
-    if puck_dict:
+    if puck_dict and speed_adjustment:
         # Find a robot from puck_dict to compare with
         other_robot_id = next(iter(puck_dict.keys()))
         other_robot = puck_dict[other_robot_id]
         other_x = other_robot.get("x")
         
         if other_x is not None:
-            x_diff = other_x - x  # Positive if other robot is ahead, negative if behind
+            # Adjust x_diff based on robot's direction (0-180 vs 180-360)
+            if angle is not None:
+                if 0 <= angle < 180:  # Robot pointing in positive direction
+                    x_diff = x - other_x  # Positive if other robot is ahead
+                else:  # Robot pointing in negative direction (180-360)
+                    x_diff = other_x - x  # Positive if other robot is ahead in this direction
+            else:
+                x_diff = other_x - x  # Default behavior if angle is unknown
+                
             speed_adjustment = min(abs(x_diff) * 200, 200)  # Scale factor for speed adjustment
             
             if x_diff > 0.05:  # Other robot is ahead - speed up
@@ -439,7 +447,7 @@ try:
             #    current_state = STATE_DONE
             #    pipuck.epuck.set_motor_speeds(0, 0)
             #    break               
-            if drive_forward_stepwise(target_x,target_y):
+            if drive_forward_stepwise(target_x,target_y, speed_adjustment=True):
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
                 rows_swept += 1
