@@ -398,12 +398,11 @@ try:
                 current_state = STATE_START
                 continue
             else:
-                if spacing is None and len(all_ids) >= 1:
-                    spacing = max_range*0.9
-                    rowY    = 0.2
-                    total_sweeps = math.ceil(ArenaMaxY / spacing)
-                    sweeps_per_rbt = math.ceil(total_sweeps / len(all_ids))
-                    print(f"total_sweeps: {total_sweeps}, sweeps_per_rbt: {sweeps_per_rbt}, spacing: {spacing}")
+                spacing = max_range*0.9
+                rowY    = 0.2
+                total_sweeps = math.ceil(ArenaMaxY / spacing)
+                sweeps_per_rbt = math.ceil(total_sweeps / len(all_ids))
+                print(f"total_sweeps: {total_sweeps}, sweeps_per_rbt: {sweeps_per_rbt}, spacing: {spacing}")
                     
                 role      = "LEADER" if int(pi_puck_id)==min(map(int,all_ids)) else "FOLLOWER"
                 idx       = all_ids.index(pi_puck_id)
