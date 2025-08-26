@@ -391,33 +391,33 @@ try:
 
         elif current_state == STATE_SWEEP_DRIVE:
             print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
-            print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
+            # print(f"{pi_puck_id} STATE_SWEEP_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
 
-            target_found_by_any = False
-            for rid, data in puck_dict.items():
-                 if data.get("target_found", False):
-                      target_found_by_any = True
-                      break
+            # target_found_by_any = False
+            # for rid, data in puck_dict.items():
+            #      if data.get("target_found", False):
+            #           target_found_by_any = True
+            #           break
                    
-            if target_in_range(x, y, target_id)[0] or target_found_by_any:
-               print(f"{pi_puck_id}: Target in Range!")
-               publish_data({
-                   pi_puck_id: {
-                       "x": x,
-                       "y": y,
-                       "angle": angle,
-                       "sensors": {
-                           "temperature": random.randint(0,50),
-                           "humidity": random.randint(0,100),
-                           "light": random.randint(0,100)
-                       },
-                       "target_found": True,
-                       "ready": ready
-                   }
-               })
-               current_state = STATE_DONE
-               pipuck.epuck.set_motor_speeds(0, 0)
-               break               
+            # if target_in_range(x, y, target_id)[0] or target_found_by_any:
+            #    print(f"{pi_puck_id}: Target in Range!")
+            #    publish_data({
+            #        pi_puck_id: {
+            #            "x": x,
+            #            "y": y,
+            #            "angle": angle,
+            #            "sensors": {
+            #                "temperature": random.randint(0,50),
+            #                "humidity": random.randint(0,100),
+            #                "light": random.randint(0,100)
+            #            },
+            #            "target_found": True,
+            #            "ready": ready
+            #        }
+            #    })
+            #    current_state = STATE_DONE
+            #    pipuck.epuck.set_motor_speeds(0, 0)
+            #    break               
             if drive_forward_stepwise(target_x,target_y):
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
