@@ -286,7 +286,7 @@ try:
     for _ in range(10000):
         # TODO: Do your stuff here     
         time.sleep(0.1)
-        print(f'puck_dict: {puck_dict}')
+        # print(f'puck_dict: {puck_dict}')
         # print(f'target_x: {target_x}, target_y: {target_y}')
         x, y, angle = get_position()
         if x is not None and y is not None:
