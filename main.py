@@ -27,7 +27,7 @@ ready = False
 target_id = '44'
 
 # Arena parameters
-StartX     = 0.1
+StartX     = 0.2
 SweepEndX  = 1.9   # 2m arena minus 0.1 margin
 ArenaMaxY  = 1.0
 
