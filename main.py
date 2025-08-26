@@ -182,7 +182,7 @@ def collsion_detected(x, y, radius = 0.1):
                             return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
+def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1, correction=False):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
@@ -192,10 +192,11 @@ def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.1):
     speedleft = spd
     speedright= spd
     
-    if (y < ty):
-        speedleft  = spd * (1 - 0.5 * (ty - y) / (ty - start_position[1] + 0.01))
-    else:
-        speedright = spd * (1 - 0.5 * (y - ty) / (start_position[1] - ty + 0.01))
+    if (correction):
+        if (y < ty):
+            speedleft  = spd * (1 - 0.5 * (ty - y) / (ty - start_position[1] + 0.01))
+        else:
+            speedright = spd * (1 - 0.5 * (y - ty) / (start_position[1] - ty + 0.01))
     
     # if collsion_detected(x, y)[0]:
     #     print(f"[{pi_puck_id}] Collision detected! Stopping.")
@@ -428,7 +429,7 @@ try:
                current_state = STATE_DONE
                pipuck.epuck.set_motor_speeds(0, 0)
                break               
-            if drive_forward_stepwise(target_x,target_y):
+            if drive_forward_stepwise(target_x,target_y, correction=True):
                 print(f"{pi_puck_id} sweep row complete.")
                 #sweeps_per_rbt -= 1
                 rows_swept += 1
