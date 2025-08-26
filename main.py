@@ -463,7 +463,7 @@ try:
 
         elif current_state == STATE_ROW_DRIVE:
             print(f"{pi_puck_id} STATE_ROW_DRIVE at Y={target_y:.2f}, direction={sweep_direction}")
-            if drive_forward_stepwise(x, target_y):
+            if drive_forward_stepwise(x, target_y, thresh_y=0.05):
                 rowY = target_y
                 sweep_direction *= -1
                 target_x = SweepEndX if sweep_direction == 1 else StartX
