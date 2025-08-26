@@ -182,7 +182,7 @@ def collsion_detected(x, y, radius = 0.1):
                             return True, key
     return False, None
 
-def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.2):
+def drive_forward_stepwise(tx, ty, spd=forward_speed, thresh=0.4):
     global start_position
     x,y,_ = get_position()
     if start_position is None:
@@ -210,7 +210,7 @@ def rotate_to_target_stepwise(x, y, ang, tx, ty, thresh=0.2):
     if abs(diff) < thresh:
         pipuck.epuck.set_motor_speeds(0, 0)
         return True
-    spd = max(5*abs(diff), 30)
+    spd = max(5*abs(diff), 10)
     if diff > 0:
         pipuck.epuck.set_motor_speeds(spd, -spd)
     else:
